@@ -8,51 +8,220 @@ datasource db {
 }
 
 model User {
-  id        Int       @id @default(autoincrement())
-  email     String    @unique
+  id        Int      @id @default(autoincrement())
+  email     String   @unique
   password  String
-  name      String?
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  orders    Order[]
+  fullName  String
+  phone     String?
+  address   String?
+  role      UserRole @default(GUEST)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  bookings Booking[]
+  wishlist Wishlist[]
 }
 
-model Product {
-  id          Int       @id @default(autoincrement())
-  name        String
+model RoomType {
+  id          Int      @id @default(autoincrement())
+  name        String   @unique
   description String?
-  price       Decimal   @db.Decimal(10, 2)
-  stock       Int       @default(0)
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  orderItems  OrderItem[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  rooms Room[]
 }
 
-model Order {
-  id         Int         @id @default(autoincrement())
-  userId     Int
-  user       User        @relation(fields: [userId], references: [id])
-  status     OrderStatus @default(PENDING)
-  total      Decimal     @db.Decimal(10, 2)
-  createdAt  DateTime    @default(now())
-  updatedAt  DateTime    @updatedAt
-  items      OrderItem[]
+model Room {
+  id            Int        @id @default(autoincrement())
+  roomNumber    String     @unique
+  name          String
+  roomTypeId    Int
+  roomType      RoomType   @relation(fields: [roomTypeId], references: [id])
+  description   String?    @db.Text
+  capacity      Int
+  pricePerNight Decimal    @db.Decimal(10, 2)
+  status        RoomStatus @default(AVAILABLE)
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+
+  images   RoomImage[]
+  bookings Booking[]
+  wishlist Wishlist[]
 }
 
-model OrderItem {
-  id        Int     @id @default(autoincrement())
-  orderId   Int
-  order     Order   @relation(fields: [orderId], references: [id])
-  productId Int
-  product   Product @relation(fields: [productId], references: [id])
-  quantity  Int
-  price     Decimal @db.Decimal(10, 2)
+model RoomImage {
+  id        Int    @id @default(autoincrement())
+  roomId    Int
+  room      Room   @relation(fields: [roomId], references: [id])
+  imageUrl  String
+  sortOrder Int    @default(0)
 }
 
-enum OrderStatus {
+model Service {
+  id          Int      @id @default(autoincrement())
+  name        String   @unique
+  description String?  @db.Text
+  price       Decimal  @db.Decimal(10, 2)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  bookingServices  BookingService[]
+  serviceComboItems ServiceComboItem[]
+}
+
+model ServiceCombo {
+  id          Int      @id @default(autoincrement())
+  name        String   @unique
+  description String?  @db.Text
+  comboPrice  Decimal  @db.Decimal(10, 2)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  items         ServiceComboItem[]
+  bookingCombos BookingCombo[]
+}
+
+model ServiceComboItem {
+  comboId   Int
+  combo     ServiceCombo @relation(fields: [comboId], references: [id])
+  serviceId Int
+  service   Service      @relation(fields: [serviceId], references: [id])
+
+  @@id([comboId, serviceId])
+}
+
+model Voucher {
+  id             Int                 @id @default(autoincrement())
+  code           String              @unique
+  description    String?             @db.Text
+  discountType   VoucherDiscountType
+  discountValue  Decimal             @db.Decimal(10, 2)
+  maxUsage       Int
+  usedCount      Int                 @default(0)
+  startDate      DateTime
+  endDate        DateTime
+  isActive       Boolean             @default(true)
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
+
+  bookings Booking[]
+}
+
+model Booking {
+  id                Int           @id @default(autoincrement())
+  bookingCode       String        @unique
+  userId            Int
+  user              User          @relation(fields: [userId], references: [id])
+  roomId            Int
+  room              Room          @relation(fields: [roomId], references: [id])
+  voucherId         Int?
+  voucher           Voucher?      @relation(fields: [voucherId], references: [id])
+  status            BookingStatus @default(PENDING)
+  checkInDate       DateTime
+  checkOutDate      DateTime
+  numberOfNights    Int
+  roomPricePerNight Decimal       @db.Decimal(10, 2)
+  serviceTotal      Decimal       @db.Decimal(10, 2)
+  comboTotal        Decimal       @db.Decimal(10, 2)
+  discountAmount    Decimal       @db.Decimal(10, 2)
+  totalAmount       Decimal       @db.Decimal(10, 2)
+  expiresAt         DateTime
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+
+  services BookingService[]
+  combos   BookingCombo[]
+  payment  Payment?
+
+  @@index([roomId, checkInDate, checkOutDate])
+  @@index([userId])
+  @@index([status])
+}
+
+model BookingService {
+  id            Int     @id @default(autoincrement())
+  bookingId     Int
+  booking       Booking @relation(fields: [bookingId], references: [id])
+  serviceId     Int
+  service       Service @relation(fields: [serviceId], references: [id])
+  quantity      Int
+  priceSnapshot Decimal @db.Decimal(10, 2)
+
+  @@unique([bookingId, serviceId])
+}
+
+model BookingCombo {
+  id                Int          @id @default(autoincrement())
+  bookingId         Int
+  booking           Booking      @relation(fields: [bookingId], references: [id])
+  comboId           Int
+  combo             ServiceCombo @relation(fields: [comboId], references: [id])
+  quantity          Int
+  comboPriceSnapshot Decimal     @db.Decimal(10, 2)
+
+  @@unique([bookingId, comboId])
+}
+
+model Payment {
+  id                Int            @id @default(autoincrement())
+  bookingId         Int            @unique
+  booking           Booking        @relation(fields: [bookingId], references: [id])
+  amount            Decimal        @db.Decimal(10, 2)
+  gateway           PaymentGateway @default(VNPAY)
+  transactionRef    String         @unique
+  vnpayResponseCode String?
+  status            PaymentStatus  @default(PENDING)
+  paidAt            DateTime?
+  createdAt         DateTime       @default(now())
+
+  @@index([transactionRef])
+}
+
+model Wishlist {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id])
+  roomId    Int
+  room      Room     @relation(fields: [roomId], references: [id])
+  createdAt DateTime @default(now())
+
+  @@unique([userId, roomId])
+}
+
+enum UserRole {
+  GUEST
+  EMPLOYEE
+  ADMIN
+}
+
+enum RoomStatus {
+  AVAILABLE
+  MAINTENANCE
+  INACTIVE
+}
+
+enum BookingStatus {
   PENDING
   CONFIRMED
-  SHIPPED
-  DELIVERED
+  CHECKED_IN
+  CHECKED_OUT
   CANCELLED
+}
+
+enum PaymentStatus {
+  PENDING
+  SUCCESS
+  FAILED
+}
+
+enum PaymentGateway {
+  VNPAY
+}
+
+enum VoucherDiscountType {
+  PERCENTAGE
+  FIXED_AMOUNT
 }

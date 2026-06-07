@@ -3,8 +3,15 @@ import { ConfigModule } from "./config/config.module";
 import { DatabaseModule } from "./database/database.module";
 import { AuthModule } from "./modules/auth/auth.module";
 import { UsersModule } from "./modules/users/users.module";
-import { ProductsModule } from "./modules/products/products.module";
-import { OrdersModule } from "./modules/orders/orders.module";
+import { RoomsModule } from "./modules/rooms/rooms.module";
+import { RoomTypesModule } from "./modules/room-types/room-types.module";
+import { ServicesModule } from "./modules/services/services.module";
+import { ServiceCombosModule } from "./modules/service-combos/service-combos.module";
+import { BookingsModule } from "./modules/bookings/bookings.module";
+import { PaymentsModule } from "./modules/payments/payments.module";
+import { VouchersModule } from "./modules/vouchers/vouchers.module";
+import { WishlistModule } from "./modules/wishlist/wishlist.module";
+import { AdminModule } from "./modules/admin/admin.module";
 
 @Module({
   imports: [
@@ -12,8 +19,15 @@ import { OrdersModule } from "./modules/orders/orders.module";
     DatabaseModule,
     AuthModule,
     UsersModule,
-    ProductsModule,
-    OrdersModule,
+    RoomsModule,
+    RoomTypesModule,
+    ServicesModule,
+    ServiceCombosModule,
+    BookingsModule,
+    PaymentsModule,
+    VouchersModule,
+    WishlistModule,
+    AdminModule,
   ],
 })
 export class AppModule {}

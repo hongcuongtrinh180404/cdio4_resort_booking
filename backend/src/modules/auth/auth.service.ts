@@ -18,7 +18,11 @@ export class AuthService {
       ...dto,
       password: hashedPassword,
     });
-    const token = this.jwtService.sign({ sub: user.id, email: user.email });
+    const token = this.jwtService.sign({
+      sub: user.id,
+      email: user.email,
+      role: user.role,
+    });
     return { user, token };
   }
 
@@ -29,7 +33,19 @@ export class AuthService {
     const isMatch = await bcrypt.compare(dto.password, user.password);
     if (!isMatch) throw new UnauthorizedException("Invalid credentials");
 
-    const token = this.jwtService.sign({ sub: user.id, email: user.email });
-    return { user, token };
+    const token = this.jwtService.sign({
+      sub: user.id,
+      email: user.email,
+      role: user.role,
+    });
+    return {
+      user: {
+        id: user.id,
+        email: user.email,
+        fullName: user.fullName,
+        role: user.role,
+      },
+      token,
+    };
   }
 }

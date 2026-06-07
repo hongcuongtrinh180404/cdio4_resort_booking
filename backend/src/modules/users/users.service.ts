@@ -11,11 +11,16 @@ export class UsersService {
   }
 
   findAll() {
-    return this.prisma.user.findMany();
+    return this.prisma.user.findMany({
+      select: { id: true, email: true, fullName: true, phone: true, address: true, role: true, createdAt: true },
+    });
   }
 
   findById(id: number) {
-    return this.prisma.user.findUnique({ where: { id } });
+    return this.prisma.user.findUnique({
+      where: { id },
+      select: { id: true, email: true, fullName: true, phone: true, address: true, role: true, createdAt: true },
+    });
   }
 
   findByEmail(email: string) {
