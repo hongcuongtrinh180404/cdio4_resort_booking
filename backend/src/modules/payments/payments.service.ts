@@ -15,6 +15,7 @@ export class PaymentsService {
     if (!booking) throw new NotFoundException("Booking not found");
     if (booking.userId !== userId) throw new BadRequestException("Unauthorized");
     if (booking.status !== "PENDING") throw new BadRequestException("Booking is not pending");
+    if (new Date() > booking.expiresAt) throw new BadRequestException("Booking has expired, please create a new booking");
 
     await this.prisma.$transaction([
       this.prisma.payment.create({

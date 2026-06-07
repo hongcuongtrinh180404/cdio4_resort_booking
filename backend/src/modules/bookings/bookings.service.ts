@@ -6,7 +6,7 @@ import { BookingStatus } from "@prisma/client";
 
 @Injectable()
 export class BookingsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService) { }
 
   async create(dto: CreateBookingDto, userId: number) {
     const { roomId, checkInDate, checkOutDate, serviceIds, comboIds, voucherCode } = dto;
@@ -15,6 +15,8 @@ export class BookingsService {
     const checkOut = new Date(checkOutDate);
     const numberOfNights = Math.ceil((checkOut.getTime() - checkIn.getTime()) / (1000 * 60 * 60 * 24));
     if (numberOfNights < 1) throw new BadRequestException("Check-out must be after check-in");
+
+    await this.releaseExpiredBookings();
 
     return this.prisma.$transaction(async (tx) => {
       const conflict = await tx.booking.findFirst({
@@ -64,7 +66,7 @@ export class BookingsService {
 
       const totalAmount = numberOfNights * Number(roomPricePerNight) + serviceTotal + comboTotal - discountAmount;
       const bookingCode = `BK${Date.now()}`;
-      const expiresAt = new Date(Date.now() + 30 * 60 * 1000);
+      const expiresAt = new Date(Date.now() + 2 * 60 * 1000);
 
       const booking = await tx.booking.create({
         data: {
@@ -125,7 +127,38 @@ export class BookingsService {
     });
   }
 
-  findByUser(userId: number) {
+  private async releaseExpiredBookings() {
+    const now = new Date();
+    const expired = await this.prisma.booking.findMany({
+      where: {
+        status: "PENDING",
+        expiresAt: { lt: now },
+      },
+      select: { id: true, voucherId: true },
+    });
+
+    for (const booking of expired) {
+      await this.prisma.$transaction(async (tx) => {
+        if (booking.voucherId) {
+          await tx.voucher.update({
+            where: { id: booking.voucherId },
+            data: { usedCount: { decrement: 1 } },
+          });
+        }
+        await tx.booking.update({
+          where: { id: booking.id },
+          data: { status: "CANCELLED" },
+        });
+      });
+    }
+
+    if (expired.length > 0) {
+      console.log(`Released ${expired.length} expired booking(s)`);
+    }
+  }
+
+  async findByUser(userId: number) {
+    await this.releaseExpiredBookings();
     return this.prisma.booking.findMany({
       where: { userId },
       include: {
@@ -154,6 +187,7 @@ export class BookingsService {
   }
 
   async findById(id: number) {
+    await this.releaseExpiredBookings();
     const booking = await this.prisma.booking.findUnique({
       where: { id },
       include: {
