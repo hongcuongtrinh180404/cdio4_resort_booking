@@ -8,15 +8,17 @@ datasource db {
 }
 
 model User {
-  id        Int      @id @default(autoincrement())
-  email     String   @unique
-  password  String
-  fullName  String
-  phone     String?
-  address   String?
-  role      UserRole @default(GUEST)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id              Int       @id @default(autoincrement())
+  email           String    @unique
+  password        String
+  fullName        String
+  phone           String?
+  address         String?
+  role            UserRole  @default(GUEST)
+  resetCode       String?
+  resetCodeExpires DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
 
   bookings Booking[]
   wishlist Wishlist[]

@@ -47,6 +47,9 @@ export default function LoginPage() {
           Đăng nhập
         </button>
         <p className="text-sm text-center text-gray-600">
+          <Link href="/forgot-password" className="text-blue-600 hover:underline">Quên mật khẩu?</Link>
+        </p>
+        <p className="text-sm text-center text-gray-600">
           Chưa có tài khoản?{" "}
           <Link href="/register" className="text-blue-600 hover:underline">Đăng ký</Link>
         </p>
