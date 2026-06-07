@@ -1,0 +1,13 @@
+{
+  "name": "cdio4",
+  "private": true,
+  "scripts": {
+    "dev": "concurrently \"pnpm run dev:frontend\" \"pnpm run dev:backend\"",
+    "dev:frontend": "pnpm --filter frontend dev",
+    "dev:backend": "pnpm --filter backend dev",
+    "build": "pnpm --filter frontend build && pnpm --filter backend build"
+  },
+  "devDependencies": {
+    "concurrently": "9.1.2"
+  }
+}
