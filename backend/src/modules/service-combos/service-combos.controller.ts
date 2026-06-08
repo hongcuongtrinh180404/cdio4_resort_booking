@@ -19,6 +19,12 @@ export class ServiceCombosController {
     return this.serviceCombosService.findAll();
   }
 
+  @Get(":id")
+  @ApiOperation({ summary: "Get service combo by id" })
+  findOne(@Param("id") id: string) {
+    return this.serviceCombosService.findById(Number(id));
+  }
+
   @Post()
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.EMPLOYEE, Role.ADMIN)

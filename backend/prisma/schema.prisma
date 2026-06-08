@@ -83,6 +83,7 @@ model Service {
   name        String   @unique
   description String?  @db.Text
   price       Decimal  @db.Decimal(10, 2)
+  imageUrls   Json     @default("[]")
   isActive    Boolean  @default(true)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -96,6 +97,7 @@ model ServiceCombo {
   name        String   @unique
   description String?  @db.Text
   comboPrice  Decimal  @db.Decimal(10, 2)
+  imageUrls   Json     @default("[]")
   isActive    Boolean  @default(true)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt

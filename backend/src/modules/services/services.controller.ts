@@ -19,6 +19,12 @@ export class ServicesController {
     return this.servicesService.findAll();
   }
 
+  @Get(":id")
+  @ApiOperation({ summary: "Get service by id" })
+  findOne(@Param("id") id: string) {
+    return this.servicesService.findById(Number(id));
+  }
+
   @Post()
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.EMPLOYEE, Role.ADMIN)

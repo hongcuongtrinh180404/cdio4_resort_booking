@@ -12,6 +12,10 @@ export class CreateServiceComboDto {
   @Min(0)
   comboPrice: number;
 
+  @IsOptional()
+  @IsArray()
+  imageUrls?: string[];
+
   @IsArray()
   @IsInt({ each: true })
   serviceIds: number[];

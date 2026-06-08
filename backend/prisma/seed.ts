@@ -11,7 +11,12 @@ const IMAGE_POOL = [
   "https://images.unsplash.com/photo-1611892440504-42a792e24d32?auto=format&fit=crop&w=800&q=80",
   "https://images.unsplash.com/photo-1586023492125-27b2c045efd7?auto=format&fit=crop&w=800&q=80",
   "https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?auto=format&fit=crop&w=800&q=80",
-  "https://images.unsplash.com/photo-1522771739013-7c97f2b48a84?auto=format&fit=crop&w=800&q=80",
+  "https://images.unsplash.com/photo-1618773928121-c32242e63f39?auto=format&fit=crop&w=800&q=80",
+  "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=800&q=80",
+  "https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=800&q=80",
+  "https://images.unsplash.com/photo-1600047509807-ba8f99d2cdde?auto=format&fit=crop&w=800&q=80",
+  "https://images.unsplash.com/photo-1564013799919-ab600027ffc6?auto=format&fit=crop&w=800&q=80",
+  "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=800&q=80",
 ];
 
 const AMENITIES = [
@@ -166,15 +171,15 @@ async function main() {
       },
     });
 
-    // Add 2 images per room
-    const img1Idx = idx % IMAGE_POOL.length;
-    const img2Idx = (idx + 1) % IMAGE_POOL.length;
+    // Add 4 images per room
+    const imgCount = 4;
     await prisma.roomImage.deleteMany({ where: { roomId: room.id } });
     await prisma.roomImage.createMany({
-      data: [
-        { roomId: room.id, imageUrl: IMAGE_POOL[img1Idx], sortOrder: 0 },
-        { roomId: room.id, imageUrl: IMAGE_POOL[img2Idx], sortOrder: 1 },
-      ],
+      data: Array.from({ length: imgCount }, (_, i) => ({
+        roomId: room.id,
+        imageUrl: IMAGE_POOL[(idx + i) % IMAGE_POOL.length],
+        sortOrder: i,
+      })),
     });
 
     // Add amenities
@@ -189,44 +194,119 @@ async function main() {
     }
   }
 
-  const services = [
-    { name: "Bữa sáng", description: "Buffet sáng tại nhà hàng", price: 200000 },
-    { name: "Đưa đón sân bay", description: "Xe đưa đón sân bay 2 chiều", price: 500000 },
-    { name: "Spa", description: "Massage thư giãn 60 phút", price: 600000 },
-    { name: "Thuê xe máy", description: "Thuê xe máy 24h", price: 150000 },
-    { name: "Dùng bữa tối", description: "Set dinner 3 món", price: 350000 },
+  // ========== SERVICES ==========
+  const servicesData = [
+    { name: "Spa Massage", description: "Massage thư giãn toàn thân với tinh dầu thiên nhiên, giúp tái tạo năng lượng", price: 600000, imageUrls: ["https://images.unsplash.com/photo-1544161515-4ab6ce6db874?auto=format&fit=crop&w=800&q=80", "https://images.unsplash.com/photo-1600334089648-b0d9d3028eb2?auto=format&fit=crop&w=800&q=80"] },
+    { name: "Couple Massage", description: "Massage dành cho cặp đôi trong không gian riêng tư lãng mạn", price: 1000000, imageUrls: ["https://images.unsplash.com/photo-1600334125049-f2e36f4b0cfa?auto=format&fit=crop&w=800&q=80", "https://images.unsplash.com/photo-1580619305218-8423a7ef79b4?auto=format&fit=crop&w=800&q=80"] },
+    { name: "Sauna & Steam Bath", description: "Xông hơi khô và ướt kết hợp, thanh lọc cơ thể và thư giãn tinh thần", price: 350000, imageUrls: ["https://images.unsplash.com/photo-1545389336-cf090694435e?auto=format&fit=crop&w=800&q=80", "https://images.unsplash.com/photo-1586201375761-83865001e8ac?auto=format&fit=crop&w=800&q=80"] },
+    { name: "Airport Transfer", description: "Đưa đón sân bay 2 chiều bằng xe sang cao cấp", price: 500000, imageUrls: ["https://images.unsplash.com/photo-1553440569-bcc63803a83d?auto=format&fit=crop&w=800&q=80", "https://images.unsplash.com/photo-1464037866556-6812c9d1c72e?auto=format&fit=crop&w=800&q=80"] },
+    { name: "Private BBQ Dinner", description: "Bữa tối BBQ riêng tư bên bờ biển với thực đơn cao cấp", price: 800000, imageUrls: ["https://images.unsplash.com/photo-1555939594-58d7cb561ad1?auto=format&fit=crop&w=800&q=80", "https://images.unsplash.com/photo-1528605248644-14dd04022da1?auto=format&fit=crop&w=800&q=80"] },
+    { name: "Romantic Room Decoration", description: "Trang trí phòng lãng mạn với hoa tươi, nến thơm và rượu vang", price: 500000, imageUrls: ["https://images.unsplash.com/photo-1510076857177-7470076d4098?auto=format&fit=crop&w=800&q=80", "https://images.unsplash.com/photo-1583337130417-3346c1be7dee?auto=format&fit=crop&w=800&q=80"] },
+    { name: "Breakfast Buffet", description: "Buffet sáng đa dạng với ẩm thực Á - Âu tại nhà hàng", price: 250000, imageUrls: ["https://images.unsplash.com/photo-1550547660-d9450f859349?auto=format&fit=crop&w=800&q=80", "https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=800&q=80"] },
+    { name: "Floating Breakfast", description: "Bữa sáng độc đáo phục vụ trên bể bơi riêng", price: 350000, imageUrls: ["https://images.unsplash.com/photo-1565557623262-b51c2513a641?auto=format&fit=crop&w=800&q=80", "https://images.unsplash.com/photo-1600335895605-41cedb62bb2a?auto=format&fit=crop&w=800&q=80"] },
+    { name: "Laundry Service", description: "Dịch vụ giặt ủi nhanh chóng, tiện lợi trong ngày", price: 100000, imageUrls: ["https://images.unsplash.com/photo-1545173168-9f1947eebb7f?auto=format&fit=crop&w=800&q=80", "https://images.unsplash.com/photo-1523821741446-edb2b68bb7a0?auto=format&fit=crop&w=800&q=80"] },
+    { name: "Bicycle Rental", description: "Thuê xe đạp khám phá khu nghỉ dưỡng và vùng lân cận", price: 150000, imageUrls: ["https://images.unsplash.com/photo-1485965120184-e220f721d03e?auto=format&fit=crop&w=800&q=80", "https://images.unsplash.com/photo-1505705694340-019e1e335916?auto=format&fit=crop&w=800&q=80"] },
+    { name: "Kayak Rental", description: "Thuê kayak chèo thuyền trên biển, khám phá vịnh", price: 200000, imageUrls: ["https://images.unsplash.com/photo-1544551763-46a013bb70d5?auto=format&fit=crop&w=800&q=80", "https://images.unsplash.com/photo-1552034406-f75b4a3841e7?auto=format&fit=crop&w=800&q=80"] },
+    { name: "Yoga Class", description: "Lớp yoga buổi sáng cùng huấn luyện viên chuyên nghiệp", price: 300000, imageUrls: ["https://images.unsplash.com/photo-1545205597-3d9d02c29597?auto=format&fit=crop&w=800&q=80", "https://images.unsplash.com/photo-1552196563-55cd4e45efb3?auto=format&fit=crop&w=800&q=80"] },
+    { name: "Fitness Center Access", description: "Phòng tập gym hiện đại với đầy đủ trang thiết bị", price: 200000, imageUrls: ["https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&w=800&q=80", "https://images.unsplash.com/photo-1571902943202-507ec2618e8f?auto=format&fit=crop&w=800&q=80"] },
+    { name: "Babysitting Service", description: "Dịch vụ trông trẻ chuyên nghiệp cho gia đình có trẻ nhỏ", price: 400000, imageUrls: ["https://images.unsplash.com/photo-1585432959362-8145685b9e0d?auto=format&fit=crop&w=800&q=80", "https://images.unsplash.com/photo-1503454537195-1dcabb73ffb9?auto=format&fit=crop&w=800&q=80"] },
+    { name: "Photography Session", description: "Buổi chụp ảnh chuyên nghiệp tại các góc đẹp nhất resort", price: 1200000, imageUrls: ["https://images.unsplash.com/photo-1516035069371-29a1b244cc32?auto=format&fit=crop&w=800&q=80", "https://images.unsplash.com/photo-1554048612-b6a482bc67e5?auto=format&fit=crop&w=800&q=80"] },
+    { name: "Snorkeling Tour", description: "Tour lặn ngắm san hô và sinh vật biển tại rạn san hô", price: 500000, imageUrls: ["https://images.unsplash.com/photo-1546026423-cc4642628d2b?auto=format&fit=crop&w=800&q=80", "https://images.unsplash.com/photo-1582967788606-a171c1080cb0?auto=format&fit=crop&w=800&q=80"] },
+    { name: "Scuba Diving Experience", description: "Trải nghiệm lặn bình khí chuyên sâu cùng hướng dẫn viên", price: 1500000, imageUrls: ["https://images.unsplash.com/photo-1544551763-46a013bb70d5?auto=format&fit=crop&w=800&q=80", "https://images.unsplash.com/photo-1546267554-c2f8b31c3ad3?auto=format&fit=crop&w=800&q=80"] },
+    { name: "Sunset Cruise", description: "Du thuyền ngắm hoàng hôn trên biển với đồ uống miễn phí", price: 800000, imageUrls: ["https://images.unsplash.com/photo-1528127269322-539801943592?auto=format&fit=crop&w=800&q=80", "https://images.unsplash.com/photo-1559827291-baf8f44cb74e?auto=format&fit=crop&w=800&q=80"] },
+    { name: "Jet Ski Rental", description: "Thuê mô tô nước lướt sóng trên biển đầy phấn khích", price: 600000, imageUrls: ["https://images.unsplash.com/photo-1502680390469-be75c86b636f?auto=format&fit=crop&w=800&q=80", "https://images.unsplash.com/photo-1531854230226-ac04eefb0f4c?auto=format&fit=crop&w=800&q=80"] },
+    { name: "Fishing Trip", description: "Tour câu cá đại dương cùng ngư dân địa phương", price: 700000, imageUrls: ["https://images.unsplash.com/photo-1508873535684-277a3cbcc4e8?auto=format&fit=crop&w=800&q=80", "https://images.unsplash.com/photo-1495615080073-6b89c9839ce0?auto=format&fit=crop&w=800&q=80"] },
   ];
-  for (const service of services) {
+
+  for (const svc of servicesData) {
     await prisma.service.upsert({
-      where: { name: service.name },
+      where: { name: svc.name },
       update: {},
-      create: service,
+      create: svc,
     });
   }
 
-  const breakfast = await prisma.service.findUnique({ where: { name: "Bữa sáng" } });
-  const airport = await prisma.service.findUnique({ where: { name: "Đưa đón sân bay" } });
-  const spa = await prisma.service.findUnique({ where: { name: "Spa" } });
-  const dinner = await prisma.service.findUnique({ where: { name: "Dùng bữa tối" } });
-  if (breakfast && dinner && spa && airport) {
+  // ========== SERVICE COMBOS ==========
+  const getServiceId = async (name: string) => {
+    const s = await prisma.service.findUnique({ where: { name } });
+    if (!s) throw new Error(`Service "${name}" not found`);
+    return s.id;
+  };
+
+  const snorkelingId = await getServiceId("Snorkeling Tour");
+  const kayakId = await getServiceId("Kayak Rental");
+  const photoId = await getServiceId("Photography Session");
+  const airportId = await getServiceId("Airport Transfer");
+  const sunsetId = await getServiceId("Sunset Cruise");
+  const bbqId = await getServiceId("Private BBQ Dinner");
+  const jetSkiId = await getServiceId("Jet Ski Rental");
+  const coupleMassageId = await getServiceId("Couple Massage");
+  const roomDecorId = await getServiceId("Romantic Room Decoration");
+  const floatingBreakfastId = await getServiceId("Floating Breakfast");
+  const breakfastId = await getServiceId("Breakfast Buffet");
+  const bicycleId = await getServiceId("Bicycle Rental");
+  const babysitId = await getServiceId("Babysitting Service");
+
+  const combosData = [
+    {
+      name: "Ocean Discovery Package",
+      description: "Khám phá đại dương với các hoạt động biển hấp dẫn",
+      comboPrice: 1400000,
+      imageUrls: ["https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=800&q=80", "https://images.unsplash.com/photo-1544551763-46a013bb70d5?auto=format&fit=crop&w=800&q=80"],
+      serviceIds: [snorkelingId, kayakId, photoId],
+    },
+    {
+      name: "Luxury Sea Experience",
+      description: "Trải nghiệm biển đẳng cấp dành cho kỳ nghỉ thượng hạng",
+      comboPrice: 2500000,
+      imageUrls: ["https://images.unsplash.com/photo-1559827291-baf8f44cb74e?auto=format&fit=crop&w=800&q=80", "https://images.unsplash.com/photo-1570733117311-d990c3816ccb?auto=format&fit=crop&w=800&q=80"],
+      serviceIds: [airportId, sunsetId, bbqId, photoId],
+    },
+    {
+      name: "Water Adventure Package",
+      description: "Trọn gói thể thao biển cho người ưa mạo hiểm",
+      comboPrice: 1000000,
+      imageUrls: ["https://images.unsplash.com/photo-1531854230226-ac04eefb0f4c?auto=format&fit=crop&w=800&q=80", "https://images.unsplash.com/photo-1546026423-cc4642628d2b?auto=format&fit=crop&w=800&q=80"],
+      serviceIds: [snorkelingId, jetSkiId, kayakId],
+    },
+    {
+      name: "Couple Romance Package",
+      description: "Dành cho các cặp đôi tìm kiếm không gian lãng mạn",
+      comboPrice: 1700000,
+      imageUrls: ["https://images.unsplash.com/photo-1600334125049-f2e36f4b0cfa?auto=format&fit=crop&w=800&q=80", "https://images.unsplash.com/photo-1510076857177-7470076d4098?auto=format&fit=crop&w=800&q=80"],
+      serviceIds: [coupleMassageId, roomDecorId, bbqId],
+    },
+    {
+      name: "Honeymoon Experience",
+      description: "Gói trăng mật hoàn hảo cho kỳ nghỉ tuần trăng mật đáng nhớ",
+      comboPrice: 2300000,
+      imageUrls: ["https://images.unsplash.com/photo-1583337130417-3346c1be7dee?auto=format&fit=crop&w=800&q=80", "https://images.unsplash.com/photo-1565557623262-b51c2513a641?auto=format&fit=crop&w=800&q=80"],
+      serviceIds: [coupleMassageId, floatingBreakfastId, photoId, roomDecorId],
+    },
+    {
+      name: "Family Vacation Package",
+      description: "Cho gia đình có trẻ em, đảm bảo kỳ nghỉ vui vẻ cho cả nhà",
+      comboPrice: 600000,
+      imageUrls: ["https://images.unsplash.com/photo-1503454537195-1dcabb73ffb9?auto=format&fit=crop&w=800&q=80", "https://images.unsplash.com/photo-1585432959362-8145685b9e0d?auto=format&fit=crop&w=800&q=80"],
+      serviceIds: [breakfastId, bicycleId, babysitId],
+    },
+    {
+      name: "Premium Resort Experience",
+      description: "Combo cao cấp bao gồm tất cả trải nghiệm đẳng cấp nhất",
+      comboPrice: 2900000,
+      imageUrls: ["https://images.unsplash.com/photo-1555939594-58d7cb561ad1?auto=format&fit=crop&w=800&q=80", "https://images.unsplash.com/photo-1528127269322-539801943592?auto=format&fit=crop&w=800&q=80"],
+      serviceIds: [airportId, coupleMassageId, floatingBreakfastId, bbqId, photoId],
+    },
+  ];
+
+  for (const combo of combosData) {
+    const { serviceIds, ...comboData } = combo;
     await prisma.serviceCombo.upsert({
-      where: { name: "Honeymoon Package" },
+      where: { name: combo.name },
       update: {},
       create: {
-        name: "Honeymoon Package",
-        description: "Gói trăng mật lãng mạn",
-        comboPrice: 1500000,
-        items: { create: [{ serviceId: breakfast.id }, { serviceId: dinner.id }, { serviceId: spa.id }] },
-      },
-    });
-    await prisma.serviceCombo.upsert({
-      where: { name: "Business Package" },
-      update: {},
-      create: {
-        name: "Business Package",
-        description: "Gói công tác tiện lợi",
-        comboPrice: 800000,
-        items: { create: [{ serviceId: breakfast.id }, { serviceId: airport.id }] },
+        ...comboData,
+        items: { create: serviceIds.map((sid) => ({ serviceId: sid })) },
       },
     });
   }
@@ -247,7 +327,9 @@ async function main() {
   console.log("Seed completed successfully!");
   console.log("  Rooms:       50 rooms (15 Villa, 20 Suite, 15 Deluxe)");
   console.log("  Amenities:   15 amenities");
-  console.log("  Images:      100 images (2 per room)");
+  console.log("  Images:      200 images (4 per room)");
+  console.log("  Services:    20 services");
+  console.log("  Combos:      7 service combos");
   console.log("  Admin:       admin@dtuvivi.com / 123456");
   console.log("  Employee:    employee@dtuvivi.com / 123456");
   console.log("  Guest:       guest@dtuvivi.com / 123456");
