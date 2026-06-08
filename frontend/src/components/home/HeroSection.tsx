@@ -1,12 +1,10 @@
 "use client";
 
-import { SearchWidget } from "./SearchWidget";
-
 export function HeroSection() {
   return (
-    <section className="relative max-w-max-width mx-auto px-margin-mobile md:px-margin-desktop pt-12 md:pt-20 pb-32">
+    <section className="relative max-w-max-width mx-auto px-margin-mobile md:px-margin-desktop pt-12 md:pt-20 pb-32 md:pb-40">
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-        <div className="space-y-8 z-10">
+        <div className="space-y-8 z-10 relative">
           <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary-container text-on-primary-container font-label-caps text-label-caps font-semibold shadow-sm">
             <span className="material-symbols-outlined text-sm animate-pulse text-primary">
               stars
@@ -42,12 +40,10 @@ export function HeroSection() {
           <img
             alt="Luxury resort exterior view"
             className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105"
-            src="https://lh3.googleusercontent.com/aida-public/AB6AXuDX1FUpthErHmgU_YTqvRCeW5Lz_q5FkQEzyXKKDWPQeQkLJil-m_nETJkEE25iPrAnY63C_B2r_qs3sz9eGO20OUcJm0EV6OmWKNEzx3wyElK0AH0uOeX5hkKEp9wcTMS_cxHb1oXh-oXujlDUYH7xiK4XwmKqKtWpCgfLUcrKVQCvJ-nMefC_PGrj1o37Tx4Y976-agGCiafksv6D2bojtt2MGb75qWk6Rvm9iXdavQzbi0iekGcT95SwD1h0_9qTvPKrOb9nlpg"
+            src="https://res.cloudinary.com/dzlqaeyly/image/upload/q_auto/f_auto/v1780900532/gate1_mi3bmv.png"
           />
         </div>
       </div>
-
-      <SearchWidget />
     </section>
   );
 }

@@ -5,9 +5,11 @@ export function Footer() {
     <footer className="bg-surface-container-lowest border-t border-outline" id="footer">
       <div className="max-w-max-width mx-auto px-margin-mobile md:px-margin-desktop py-16 grid grid-cols-1 md:grid-cols-4 gap-12">
         <div className="space-y-6 text-left">
-          <div className="font-headline-md text-headline-md font-bold text-primary">
-            DTUVIVU
-          </div>
+          <img
+            src="https://res.cloudinary.com/dzlqaeyly/image/upload/q_auto/f_auto/v1780902098/60340468-5c1e-4171-9fc0-98c767b00b26_q3vvbe.png"
+            alt="DTUVIVU"
+            className="h-10 w-auto"
+          />
           <p className="font-body-sm text-body-sm text-on-surface-variant leading-relaxed">
             Nền tảng đặt phòng resort cao cấp hàng đầu, mang đến các kỳ nghỉ thượng lưu hoàn hảo và
             độc bản.

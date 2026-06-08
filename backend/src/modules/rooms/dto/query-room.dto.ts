@@ -1,4 +1,4 @@
-import { IsOptional, IsInt, IsDateString } from "class-validator";
+import { IsOptional, IsInt, IsDateString, IsString } from "class-validator";
 
 export class QueryRoomDto {
   @IsOptional()
@@ -16,4 +16,8 @@ export class QueryRoomDto {
   @IsOptional()
   @IsDateString()
   checkOut?: string;
+
+  @IsOptional()
+  @IsString()
+  amenityIds?: string;
 }

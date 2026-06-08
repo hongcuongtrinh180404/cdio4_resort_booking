@@ -1,6 +1,14 @@
 import Link from "next/link";
 import { formatVND } from "@/lib/utils";
 
+interface RoomAmenity {
+  amenity: {
+    id: number;
+    name: string;
+    icon: string | null;
+  };
+}
+
 interface RoomCardProps {
   room: {
     id: number;
@@ -9,10 +17,13 @@ interface RoomCardProps {
     capacity: number;
     roomType: { name: string };
     images: { imageUrl: string }[];
+    amenities?: RoomAmenity[];
   };
 }
 
 export function RoomCard({ room }: RoomCardProps) {
+  const displayAmenities = room.amenities?.slice(0, 4) ?? [];
+
   return (
     <Link
       href={`/rooms/${room.id}`}
@@ -34,6 +45,7 @@ export function RoomCard({ room }: RoomCardProps) {
           {room.roomType.name}
         </div>
       </div>
+
       <div className="p-5 flex flex-col justify-between flex-grow">
         <div>
           <div className="flex justify-between items-start mb-2">
@@ -41,10 +53,32 @@ export function RoomCard({ room }: RoomCardProps) {
               {room.name}
             </h3>
           </div>
-          <p className="font-body-sm text-body-sm text-on-surface-variant">
+          <p className="font-body-sm text-body-sm text-on-surface-variant mb-3">
             {room.capacity} khách
           </p>
+
+          {displayAmenities.length > 0 && (
+            <div className="flex flex-wrap gap-2 mb-3">
+              {displayAmenities.map((ra) => (
+                <span
+                  key={ra.amenity.id}
+                  className="inline-flex items-center gap-1 text-xs text-on-surface-variant bg-surface-container-low px-2 py-0.5 rounded-full"
+                >
+                  {ra.amenity.icon && (
+                    <span className="material-symbols-outlined text-[12px]">{ra.amenity.icon}</span>
+                  )}
+                  {ra.amenity.name}
+                </span>
+              ))}
+              {(room.amenities?.length ?? 0) > 4 && (
+                <span className="text-xs text-primary font-semibold">
+                  +{room.amenities!.length - 4}
+                </span>
+              )}
+            </div>
+          )}
         </div>
+
         <div className="flex justify-between items-center pt-4 border-t border-outline/50 mt-auto">
           <p className="font-headline-sm text-headline-sm text-primary font-bold">
             {formatVND(room.pricePerNight)}

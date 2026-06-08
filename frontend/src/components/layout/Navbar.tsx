@@ -45,11 +45,12 @@ export function Navbar() {
       }`}
     >
       <div className="flex justify-between items-center max-w-max-width mx-auto px-margin-mobile md:px-margin-desktop py-4">
-        <Link
-          href="/"
-          className="font-headline-md text-headline-md font-bold text-primary tracking-wide"
-        >
-          DTUVIVU
+        <Link href="/" className="flex-shrink-0">
+          <img
+            src="https://res.cloudinary.com/dzlqaeyly/image/upload/q_auto/f_auto/v1780902098/60340468-5c1e-4171-9fc0-98c767b00b26_q3vvbe.png"
+            alt="DTUVIVU"
+            className="h-10 md:h-12 w-auto"
+          />
         </Link>
 
         <nav className="hidden md:flex gap-8 items-center">

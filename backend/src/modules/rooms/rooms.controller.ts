@@ -20,6 +20,12 @@ export class RoomsController {
     return this.roomsService.findAll(query);
   }
 
+  @Get("amenities")
+  @ApiOperation({ summary: "Get all amenities for filtering" })
+  findAllAmenities() {
+    return this.roomsService.findAllAmenities();
+  }
+
   @Get(":id")
   @ApiOperation({ summary: "Get room by ID" })
   findOne(@Param("id") id: string) {

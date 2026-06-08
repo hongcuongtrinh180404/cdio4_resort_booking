@@ -47,17 +47,35 @@ model Room {
   createdAt     DateTime   @default(now())
   updatedAt     DateTime   @updatedAt
 
-  images   RoomImage[]
-  bookings Booking[]
-  wishlist Wishlist[]
+  images    RoomImage[]
+  amenities RoomAmenity[]
+  bookings  Booking[]
+  wishlist  Wishlist[]
 }
 
 model RoomImage {
   id        Int    @id @default(autoincrement())
   roomId    Int
   room      Room   @relation(fields: [roomId], references: [id])
-  imageUrl  String
+  imageUrl  String @db.Text
   sortOrder Int    @default(0)
+}
+
+model Amenity {
+  id        Int           @id @default(autoincrement())
+  name      String        @unique
+  icon      String?
+  createdAt DateTime      @default(now())
+  rooms     RoomAmenity[]
+}
+
+model RoomAmenity {
+  roomId    Int
+  room      Room     @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  amenityId Int
+  amenity   Amenity  @relation(fields: [amenityId], references: [id], onDelete: Cascade)
+
+  @@id([roomId, amenityId])
 }
 
 model Service {
