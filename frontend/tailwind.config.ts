@@ -83,7 +83,7 @@ const config: Config = {
         "display-lg": ["Poppins", "sans-serif"],
       },
       fontSize: {
-        "headline-sm": ["19px", { lineHeight: "1.4", fontWeight: "600" }],
+        "headline-sm": ["17px", { lineHeight: "1.4", fontWeight: "600" }],
         "headline-lg": ["36px", { lineHeight: "1.3", fontWeight: "600" }],
         "display-lg-mobile": ["40px", { lineHeight: "1.2", letterSpacing: "-0.02em", fontWeight: "600" }],
         "label-caps": ["12px", { lineHeight: "1.0", letterSpacing: "0.05em", fontWeight: "600" }],
