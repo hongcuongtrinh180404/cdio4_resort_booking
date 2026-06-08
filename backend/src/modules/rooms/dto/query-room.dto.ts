@@ -1,4 +1,4 @@
-import { IsOptional, IsInt, IsDateString, IsString } from "class-validator";
+import { IsOptional, IsInt, IsDateString, IsString, IsNumber, Min } from "class-validator";
 
 export class QueryRoomDto {
   @IsOptional()
@@ -20,4 +20,14 @@ export class QueryRoomDto {
   @IsOptional()
   @IsString()
   amenityIds?: string;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  minPrice?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  maxPrice?: number;
 }

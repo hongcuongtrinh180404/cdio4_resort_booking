@@ -9,12 +9,18 @@ export class RoomsService {
   constructor(private readonly prisma: PrismaService) {}
 
   async findAll(query: QueryRoomDto) {
-    const { roomTypeId, capacity, checkIn, checkOut, amenityIds } = query;
+    const { roomTypeId, capacity, checkIn, checkOut, amenityIds, minPrice, maxPrice } = query;
 
     const where: any = {
       status: "AVAILABLE",
       ...(roomTypeId && { roomTypeId }),
       ...(capacity && { capacity: { gte: capacity } }),
+      ...(minPrice !== undefined || maxPrice !== undefined ? {
+        pricePerNight: {
+          ...(minPrice !== undefined && { gte: minPrice }),
+          ...(maxPrice !== undefined && { lte: maxPrice }),
+        },
+      } : {}),
     };
 
     // AND filter — room must have ALL selected amenities

@@ -1,12 +1,9 @@
-import Link from "next/link";
+"use client";
+
 import { formatVND } from "@/lib/utils";
 
 interface RoomAmenity {
-  amenity: {
-    id: number;
-    name: string;
-    icon: string | null;
-  };
+  amenity: { id: number; name: string; icon: string | null };
 }
 
 interface RoomCardProps {
@@ -19,17 +16,28 @@ interface RoomCardProps {
     images: { imageUrl: string }[];
     amenities?: RoomAmenity[];
   };
+  onDetail: (id: number) => void;
 }
 
-export function RoomCard({ room }: RoomCardProps) {
+function getBadge(room: RoomCardProps["room"]): { label: string; className: string } | null {
+  if (room.pricePerNight >= 4000000)
+    return { label: "Sang trọng", className: "bg-primary text-on-primary" };
+  if (room.capacity >= 4)
+    return { label: "Phù hợp gia đình", className: "bg-secondary-container text-on-secondary-container" };
+  if (room.pricePerNight <= 2800000)
+    return { label: "Giá tốt", className: "bg-error text-on-error" };
+  if (room.roomType?.name)
+    return { label: room.roomType.name, className: "bg-primary-container text-on-primary-container" };
+  return null;
+}
+
+export function RoomCard({ room, onDetail }: RoomCardProps) {
+  const badge = getBadge(room);
   const displayAmenities = room.amenities?.slice(0, 4) ?? [];
 
   return (
-    <Link
-      href={`/rooms/${room.id}`}
-      className="group bg-surface rounded-2xl border border-outline overflow-hidden hover:shadow-xl transition-all duration-300 flex flex-col"
-    >
-      <div className="relative h-[220px] overflow-hidden">
+    <div className="group bg-surface rounded-xl overflow-hidden hover:shadow-xl transition-all duration-300 flex flex-col border border-outline/50">
+      <div className="relative h-56 overflow-hidden">
         {room.images[0]?.imageUrl ? (
           <img
             src={room.images[0].imageUrl}
@@ -37,59 +45,89 @@ export function RoomCard({ room }: RoomCardProps) {
             className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
           />
         ) : (
-          <div className="w-full h-full bg-surface-container-high flex items-center justify-center text-on-surface-variant font-body-sm">
-            Hình ảnh
+          <div className="w-full h-full bg-surface-container-high flex items-center justify-center text-on-surface-variant">
+            <span className="material-symbols-outlined text-3xl">image</span>
           </div>
         )}
-        <div className="absolute top-3 left-3 bg-primary-container text-on-primary-container px-2.5 py-0.5 rounded-full font-label-caps text-label-caps font-semibold text-xs shadow-sm">
-          {room.roomType.name}
-        </div>
+        {badge && (
+          <span className={`absolute top-3 left-3 px-3 py-0.5 rounded-full text-label-caps text-xs font-semibold shadow-sm ${badge.className}`}>
+            {badge.label}
+          </span>
+        )}
+        <button className="absolute top-3 right-3 bg-surface/80 backdrop-blur-sm p-1.5 rounded-full hover:bg-primary hover:text-on-primary transition-colors shadow-sm">
+          <span className="material-symbols-outlined text-lg">favorite</span>
+        </button>
       </div>
 
       <div className="p-5 flex flex-col justify-between flex-grow">
         <div>
           <div className="flex justify-between items-start mb-2">
-            <h3 className="font-headline-sm text-headline-sm text-on-surface group-hover:text-primary transition-colors">
+            <h3
+              className="font-headline-sm text-headline-sm text-on-surface group-hover:text-primary transition-colors cursor-pointer"
+              onClick={() => onDetail(room.id)}
+            >
               {room.name}
             </h3>
           </div>
-          <p className="font-body-sm text-body-sm text-on-surface-variant mb-3">
-            {room.capacity} khách
-          </p>
+
+          <div className="flex items-center gap-3 mb-4 text-on-surface-variant">
+            <span className="flex items-center gap-1 text-body-sm">
+              <span className="material-symbols-outlined text-base">square_foot</span>
+              120 m²
+            </span>
+            <span className="flex items-center gap-1 text-body-sm">
+              <span className="material-symbols-outlined text-base">bed</span>
+              King
+            </span>
+            <span className="flex items-center gap-1 text-body-sm">
+              <span className="material-symbols-outlined text-base">group</span>
+              {room.capacity} khách
+            </span>
+          </div>
 
           {displayAmenities.length > 0 && (
-            <div className="flex flex-wrap gap-2 mb-3">
+            <div className="flex flex-wrap gap-1.5 mb-3">
               {displayAmenities.map((ra) => (
                 <span
                   key={ra.amenity.id}
                   className="inline-flex items-center gap-1 text-xs text-on-surface-variant bg-surface-container-low px-2 py-0.5 rounded-full"
                 >
                   {ra.amenity.icon && (
-                    <span className="material-symbols-outlined text-[12px]">{ra.amenity.icon}</span>
+                    <span className="material-symbols-outlined text-[11px]">{ra.amenity.icon}</span>
                   )}
                   {ra.amenity.name}
                 </span>
               ))}
               {(room.amenities?.length ?? 0) > 4 && (
-                <span className="text-xs text-primary font-semibold">
-                  +{room.amenities!.length - 4}
-                </span>
+                <span className="text-xs text-primary font-semibold">+{room.amenities!.length - 4}</span>
               )}
             </div>
           )}
         </div>
 
-        <div className="flex justify-between items-center pt-4 border-t border-outline/50 mt-auto">
-          <p className="font-headline-sm text-headline-sm text-primary font-bold">
-            {formatVND(room.pricePerNight)}
-            <span className="text-xs text-on-surface-variant font-normal">/đêm</span>
-          </p>
-          <span className="text-primary font-label-caps text-label-caps font-semibold group-hover:translate-x-1 transition-transform inline-flex items-center gap-1">
-            Đặt ngay
-            <span className="material-symbols-outlined text-sm">arrow_forward</span>
-          </span>
+        <div className="flex items-center justify-between pt-4 border-t border-outline/50 mt-auto">
+          <div>
+            <span className="font-headline-sm text-headline-sm text-primary font-bold">
+              {formatVND(room.pricePerNight)}
+            </span>
+            <span className="text-body-sm text-on-surface-variant ml-1">/đêm</span>
+          </div>
+          <div className="flex gap-2">
+            <button
+              onClick={() => onDetail(room.id)}
+              className="px-3 py-1.5 text-primary border border-primary rounded-lg text-label-caps text-xs font-semibold hover:bg-primary/5 transition-all"
+            >
+              Chi tiết
+            </button>
+            <a
+              href={`/bookings/new?roomId=${room.id}`}
+              className="px-3 py-1.5 bg-primary text-on-primary rounded-lg text-label-caps text-xs font-semibold hover:bg-primary/95 transition-all active:scale-95"
+            >
+              Đặt ngay
+            </a>
+          </div>
         </div>
       </div>
-    </Link>
+    </div>
   );
 }
