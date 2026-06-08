@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { format } from "date-fns";
 import { vi } from "date-fns/locale";
 import { CalendarIcon, Search, Minus, Plus } from "lucide-react";
@@ -46,20 +47,45 @@ interface RoomType {
   name: string;
 }
 
-export default function RoomsPage() {
+function RoomsContent() {
+  const searchParams = useSearchParams();
   const [allRooms, setAllRooms] = useState<Room[]>([]);
   const [roomTypes, setRoomTypes] = useState<RoomType[]>([]);
   const [amenities, setAmenities] = useState<Amenity[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const tomorrow = new Date(today);
-  tomorrow.setDate(tomorrow.getDate() + 1);
+  const today = useMemo(() => {
+    const d = new Date();
+    d.setHours(0, 0, 0, 0);
+    return d;
+  }, []);
+  const tomorrow = useMemo(() => {
+    const t = new Date(today);
+    t.setDate(t.getDate() + 1);
+    return t;
+  }, [today]);
 
   // Filters
-  const [checkIn, setCheckIn] = useState<Date>(today);
-  const [checkOut, setCheckOut] = useState<Date>(tomorrow);
+  const [checkIn, setCheckIn] = useState<Date>(() => {
+    const v = searchParams.get("checkIn");
+    if (!v) return today;
+    const d = new Date(v);
+    return isNaN(d.getTime()) ? today : d;
+  });
+  const [checkOut, setCheckOut] = useState<Date>(() => {
+    const v = searchParams.get("checkOut");
+    if (!v) return tomorrow;
+    const d = new Date(v);
+    return isNaN(d.getTime()) ? tomorrow : d;
+  });
+  const [adults, setAdults] = useState(() => {
+    const v = searchParams.get("adults");
+    return v ? Math.max(1, Math.min(MAX_ADULTS, Number(v))) : 2;
+  });
+  const [children, setChildren] = useState(() => {
+    const v = searchParams.get("children");
+    return v ? Math.max(0, Math.min(MAX_CHILDREN, Number(v))) : 0;
+  });
   const [priceRange, setPriceRange] = useState<[number, number]>([0, 15000000]);
   const [selectedTypeIds, setSelectedTypeIds] = useState<number[]>([]);
   const [selectedAmenityIds, setSelectedAmenityIds] = useState<number[]>([]);
@@ -75,6 +101,7 @@ export default function RoomsPage() {
       const params = new URLSearchParams();
       if (checkIn) params.set("checkIn", format(checkIn, "yyyy-MM-dd"));
       if (checkOut) params.set("checkOut", format(checkOut, "yyyy-MM-dd"));
+      params.set("capacity", String(adults));
       if (selectedTypeIds.length === 1) params.set("roomTypeId", String(selectedTypeIds[0]));
       if (selectedAmenityIds.length > 0) params.set("amenityIds", selectedAmenityIds.join(","));
 
@@ -94,10 +121,12 @@ export default function RoomsPage() {
 
       setAllRooms(filtered);
       setCurrentPage(1);
+    } catch {
+      setAllRooms([]);
     } finally {
       setLoading(false);
     }
-  }, [checkIn, checkOut, selectedTypeIds, selectedAmenityIds, priceRange, sortBy]);
+  }, [checkIn, checkOut, adults, selectedTypeIds, selectedAmenityIds, priceRange, sortBy]);
 
   useEffect(() => {
     fetchRooms();
@@ -138,9 +167,9 @@ export default function RoomsPage() {
       {/* Hero Banner */}
       <section className="relative h-[320px] flex items-center justify-center overflow-hidden">
         <div className="absolute inset-0 bg-cover bg-center" style={{
-          backgroundImage: "url('https://res.cloudinary.com/dzlqaeyly/image/upload/q_auto/f_auto/v1780900532/gate1_mi3bmv.png')",
+          backgroundImage: "url('https://res.cloudinary.com/dzlqaeyly/image/upload/q_auto/f_auto/v1780905355/d22613ed1a719d1fd0b22578eb2c029e_lmakm5.jpg')",
         }} />
-        <div className="absolute inset-0 hero-gradient backdrop-blur-[2px]" />
+        <div className="absolute inset-0 hero-gradient backdrop-blur-[1px]" />
         <div className="relative z-10 w-full max-w-max-width px-margin-desktop text-center">
           <h1 className="font-headline-lg text-headline-lg text-surface-bright mb-10 drop-shadow-lg">
             Tìm phòng nghỉ lý tưởng
@@ -182,14 +211,73 @@ export default function RoomsPage() {
               <span className="text-label-caps text-xs text-on-surface-variant uppercase tracking-wider font-semibold">
                 Số khách
               </span>
-              <div className="flex items-center gap-2 border border-outline rounded-lg px-3 py-2 w-full h-10 bg-background">
+              <div className="flex items-center gap-2 border border-outline rounded-lg px-3 py-1.5 w-full h-10 bg-background">
                 <span className="material-symbols-outlined text-primary text-lg">group</span>
-                <select className="border-none bg-transparent focus:ring-0 text-sm p-0 w-full outline-none">
-                  <option>2 Người lớn</option>
-                  <option>1 Người lớn</option>
-                  <option>2 Người lớn, 1 Trẻ em</option>
-                  <option>2 Người lớn, 2 Trẻ em</option>
-                </select>
+                <span className="text-sm text-on-surface flex-1">
+                  {adults} Người lớn{children > 0 && `, ${children} Trẻ em`}
+                </span>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="ghost" size="icon" className="h-7 w-7 rounded-full text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high">
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-64 p-4" align="end">
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-sm font-medium text-on-surface">Người lớn</p>
+                          <p className="text-xs text-on-surface-variant">Từ 13 tuổi</p>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <button
+                            type="button"
+                            onClick={() => setAdults(Math.max(1, adults - 1))}
+                            disabled={adults <= 1}
+                            className="flex h-8 w-8 items-center justify-center rounded-full border border-outline text-on-surface-variant hover:bg-surface-container-high disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                          >
+                            <Minus className="h-3.5 w-3.5" />
+                          </button>
+                          <span className="w-6 text-center text-sm font-semibold tabular-nums">{adults}</span>
+                          <button
+                            type="button"
+                            onClick={() => setAdults(Math.min(MAX_ADULTS, adults + 1))}
+                            disabled={adults >= MAX_ADULTS}
+                            className="flex h-8 w-8 items-center justify-center rounded-full border border-outline text-primary hover:bg-primary/5 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                          >
+                            <Plus className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
+                      </div>
+                      <div className="h-px bg-outline" />
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-sm font-medium text-on-surface">Trẻ em</p>
+                          <p className="text-xs text-on-surface-variant">2–12 tuổi</p>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <button
+                            type="button"
+                            onClick={() => setChildren(Math.max(0, children - 1))}
+                            disabled={children <= 0}
+                            className="flex h-8 w-8 items-center justify-center rounded-full border border-outline text-on-surface-variant hover:bg-surface-container-high disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                          >
+                            <Minus className="h-3.5 w-3.5" />
+                          </button>
+                          <span className="w-6 text-center text-sm font-semibold tabular-nums">{children}</span>
+                          <button
+                            type="button"
+                            onClick={() => setChildren(Math.min(MAX_CHILDREN, children + 1))}
+                            disabled={children >= MAX_CHILDREN}
+                            className="flex h-8 w-8 items-center justify-center rounded-full border border-outline text-primary hover:bg-primary/5 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                          >
+                            <Plus className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </PopoverContent>
+                </Popover>
               </div>
             </div>
             <button
@@ -265,7 +353,7 @@ export default function RoomsPage() {
               <p className="text-label-caps text-xs text-on-surface-variant uppercase tracking-wider font-semibold mb-3">
                 Tiện nghi
               </p>
-              <div className="flex flex-col gap-2.5 max-h-48 overflow-y-auto">
+              <div className="flex flex-col gap-2.5">
                 {amenities.map((a) => (
                   <label key={a.id} className="flex items-center gap-3 cursor-pointer group">
                     <input
@@ -352,5 +440,13 @@ export default function RoomsPage() {
 
       <RoomDetailModal roomId={modalRoomId} onClose={() => setModalRoomId(null)} />
     </>
+  );
+}
+
+export default function RoomsPage() {
+  return (
+    <Suspense fallback={null}>
+      <RoomsContent />
+    </Suspense>
   );
 }

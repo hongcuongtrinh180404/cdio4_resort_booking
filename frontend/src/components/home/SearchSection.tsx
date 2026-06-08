@@ -30,7 +30,12 @@ export function SearchSection() {
           className="grid grid-cols-1 md:grid-cols-4 gap-4 md:gap-5 items-end"
           onSubmit={(e) => {
             e.preventDefault();
-            window.location.href = "/rooms";
+            const params = new URLSearchParams();
+            if (checkIn) params.set("checkIn", format(checkIn, "yyyy-MM-dd"));
+            if (checkOut) params.set("checkOut", format(checkOut, "yyyy-MM-dd"));
+            params.set("adults", String(adults));
+            if (children > 0) params.set("children", String(children));
+            window.location.href = `/rooms?${params.toString()}`;
           }}
         >
           {/* Check-in */}

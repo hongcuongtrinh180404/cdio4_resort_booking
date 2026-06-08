@@ -3,6 +3,7 @@ import { PrismaService } from "../../database/prisma/prisma.service";
 import { CreateRoomDto } from "./dto/create-room.dto";
 import { UpdateRoomDto } from "./dto/update-room.dto";
 import { QueryRoomDto } from "./dto/query-room.dto";
+import { BookingStatus } from "../../common/enums";
 
 @Injectable()
 export class RoomsService {
@@ -31,6 +32,21 @@ export class RoomsService {
           amenities: { some: { amenityId: id } },
         }));
       }
+    }
+
+    // Exclude rooms with overlapping non-cancelled bookings
+    if (checkIn && checkOut) {
+      const checkInDate = new Date(checkIn);
+      const checkOutDate = new Date(checkOut);
+      where.NOT = {
+        bookings: {
+          some: {
+            status: { notIn: [BookingStatus.CANCELLED] },
+            checkInDate: { lt: checkOutDate },
+            checkOutDate: { gt: checkInDate },
+          },
+        },
+      };
     }
 
     return this.prisma.room.findMany({
