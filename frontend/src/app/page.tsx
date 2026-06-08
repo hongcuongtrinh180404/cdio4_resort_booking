@@ -1,16 +1,19 @@
-import Link from "next/link";
+import { HeroSection } from "@/components/home/HeroSection";
+import { StatsSection } from "@/components/home/StatsSection";
+import { FeaturedRooms } from "@/components/home/FeaturedRooms";
+import { ServicesSection } from "@/components/home/ServicesSection";
+import { ReviewCarousel } from "@/components/home/ReviewCarousel";
+import { CTASection } from "@/components/home/CTASection";
 
 export default function Home() {
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center gap-6 p-8">
-      <h1 className="text-5xl font-bold text-center">DTUVIVI Resort</h1>
-      <p className="text-xl text-gray-600">Trải nghiệm kỳ nghỉ tuyệt vời</p>
-      <Link
-        href="/rooms"
-        className="rounded-lg bg-blue-600 px-8 py-3 text-white font-semibold hover:bg-blue-700 transition"
-      >
-        Tìm phòng ngay
-      </Link>
-    </main>
+    <>
+      <HeroSection />
+      <StatsSection />
+      <FeaturedRooms />
+      <ServicesSection />
+      <ReviewCarousel />
+      <CTASection />
+    </>
   );
 }
