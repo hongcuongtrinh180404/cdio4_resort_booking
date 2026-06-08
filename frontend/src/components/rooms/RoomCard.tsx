@@ -10,6 +10,7 @@ interface RoomCardProps {
   room: {
     id: number;
     name: string;
+    roomNumber: string;
     pricePerNight: number;
     capacity: number;
     roomType: { name: string };
@@ -54,6 +55,9 @@ export function RoomCard({ room, onDetail }: RoomCardProps) {
             {badge.label}
           </span>
         )}
+        <span className="absolute bottom-3 left-3 bg-black/60 backdrop-blur-sm text-surface-bright px-2.5 py-0.5 rounded-md text-label-caps text-xs font-semibold shadow-sm">
+          #{String(room.roomNumber).padStart(3, '0')}
+        </span>
         <button className="absolute top-3 right-3 bg-surface/80 backdrop-blur-sm p-1.5 rounded-full hover:bg-primary hover:text-on-primary transition-colors shadow-sm">
           <span className="material-symbols-outlined text-lg">favorite</span>
         </button>

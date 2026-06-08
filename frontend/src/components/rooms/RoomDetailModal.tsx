@@ -30,6 +30,7 @@ interface RoomImage {
 interface Room {
   id: number;
   name: string;
+  roomNumber: string;
   description: string;
   capacity: number;
   pricePerNight: number;
@@ -103,6 +104,9 @@ export function RoomDetailModal({ roomId, onClose }: Props) {
                 </h2>
                 <span className="bg-primary-container text-on-primary-container px-2 py-0.5 rounded-md text-label-caps text-xs font-semibold">
                   {room.roomType.name}
+                </span>
+                <span className="bg-black/10 text-on-surface-variant px-2 py-0.5 rounded-md text-label-caps text-xs font-semibold">
+                  #{String(room.roomNumber).padStart(3, '0')}
                 </span>
               </div>
               <button
