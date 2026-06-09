@@ -18,6 +18,10 @@ interface RoomCardProps {
     amenities?: RoomAmenity[];
   };
   onDetail: (id: number) => void;
+  checkIn?: string;
+  checkOut?: string;
+  adults?: number;
+  children?: number;
 }
 
 function getBadge(room: RoomCardProps["room"]): { label: string; className: string } | null {
@@ -32,7 +36,7 @@ function getBadge(room: RoomCardProps["room"]): { label: string; className: stri
   return null;
 }
 
-export function RoomCard({ room, onDetail }: RoomCardProps) {
+export function RoomCard({ room, onDetail, checkIn, checkOut, adults, children }: RoomCardProps) {
   const badge = getBadge(room);
   const displayAmenities = room.amenities?.slice(0, 4) ?? [];
 
@@ -124,7 +128,7 @@ export function RoomCard({ room, onDetail }: RoomCardProps) {
               Chi tiết
             </button>
             <a
-              href={`/bookings/new?roomId=${room.id}`}
+              href={`/bookings/new?roomId=${room.id}${checkIn ? `&checkIn=${checkIn}` : ""}${checkOut ? `&checkOut=${checkOut}` : ""}${adults ? `&adults=${adults}` : ""}${children ? `&children=${children}` : ""}`}
               className="px-3 py-1.5 bg-primary text-on-primary rounded-lg text-label-caps text-xs font-semibold hover:bg-primary/95 transition-all active:scale-95"
             >
               Đặt ngay

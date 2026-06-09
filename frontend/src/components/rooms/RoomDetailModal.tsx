@@ -37,9 +37,13 @@ interface Room {
 interface Props {
   roomId: number | null;
   onClose: () => void;
+  checkIn?: string;
+  checkOut?: string;
+  adults?: number;
+  children?: number;
 }
 
-export function RoomDetailModal({ roomId, onClose }: Props) {
+export function RoomDetailModal({ roomId, onClose, checkIn, checkOut, adults, children }: Props) {
   const [room, setRoom] = useState<Room | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -167,7 +171,7 @@ export function RoomDetailModal({ roomId, onClose }: Props) {
                     <span className="text-body-sm text-on-surface-variant ml-1">/đêm</span>
                   </div>
                   <Link
-                    href={`/bookings/new?roomId=${room.id}`}
+                    href={`/bookings/new?roomId=${room.id}${checkIn ? `&checkIn=${checkIn}` : ""}${checkOut ? `&checkOut=${checkOut}` : ""}${adults ? `&adults=${adults}` : ""}${children ? `&children=${children}` : ""}`}
                     className="inline-block bg-primary text-on-primary px-6 py-3 rounded-lg font-semibold text-sm hover:bg-primary/95 active:scale-[0.98] transition-all"
                   >
                     Đặt phòng ngay

@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useParams } from "next/navigation";
+import { Suspense, useEffect, useState } from "react";
+import { useParams, useSearchParams } from "next/navigation";
 import { get } from "@/lib/api";
 import { formatVND } from "@/lib/utils";
 import Link from "next/link";
@@ -35,8 +35,13 @@ interface Room {
   amenities: RoomAmenity[];
 }
 
-export default function RoomDetailPage() {
+function RoomDetailContent() {
   const params = useParams();
+  const searchParams = useSearchParams();
+  const checkInParam = searchParams.get("checkIn") || undefined;
+  const checkOutParam = searchParams.get("checkOut") || undefined;
+  const adultsParam = searchParams.get("adults") || undefined;
+  const childrenParam = searchParams.get("children") || undefined;
   const [room, setRoom] = useState<Room | null>(null);
   const [loading, setLoading] = useState(true);
   const [selectedImage, setSelectedImage] = useState(0);
@@ -192,7 +197,7 @@ export default function RoomDetailPage() {
 
           <div className="pt-4">
             <Link
-              href={`/bookings/new?roomId=${room.id}`}
+              href={`/bookings/new?roomId=${room.id}${checkInParam ? `&checkIn=${checkInParam}` : ""}${checkOutParam ? `&checkOut=${checkOutParam}` : ""}${adultsParam ? `&adults=${adultsParam}` : ""}${childrenParam ? `&children=${childrenParam}` : ""}`}
               className="inline-block bg-primary hover:bg-primary/95 text-on-primary px-8 py-3.5 rounded-full font-label-caps text-label-caps font-semibold transition-all duration-200 shadow-md active:scale-95"
             >
               Đặt phòng ngay
@@ -201,5 +206,13 @@ export default function RoomDetailPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function RoomDetailPage() {
+  return (
+    <Suspense fallback={null}>
+      <RoomDetailContent />
+    </Suspense>
   );
 }

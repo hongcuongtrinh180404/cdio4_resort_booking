@@ -28,9 +28,20 @@ export default function BookingDetailPage() {
     get<Booking>(`/bookings/${params.id}`).then(setBooking).finally(() => setLoading(false));
   }, [params.id, router]);
 
+  const [paying, setPaying] = useState(false);
+
   const handlePay = async () => {
-    await post("/payments/mock", { bookingId: booking!.id });
-    setBooking({ ...booking!, status: "CONFIRMED" });
+    setPaying(true);
+    try {
+      await post("/payments/mock", { bookingId: booking!.id });
+      alert("Thanh toán thành công!");
+      const updated = await get<Booking>(`/bookings/${params.id}`);
+      setBooking(updated);
+    } catch {
+      alert("Thanh toán thất bại");
+    } finally {
+      setPaying(false);
+    }
   };
 
   if (loading) return <div className="p-6">Đang tải...</div>;
@@ -51,8 +62,8 @@ export default function BookingDetailPage() {
         <p>Trạng thái: <span className="font-semibold">{booking.status}</span></p>
       </div>
       {booking.status === "PENDING" && (
-        <button onClick={handlePay} className="mt-4 w-full rounded bg-green-600 py-3 text-white font-semibold hover:bg-green-700">
-          Thanh toán qua VNPay
+        <button onClick={handlePay} disabled={paying} className="mt-4 w-full rounded bg-green-600 py-3 text-white font-semibold hover:bg-green-700 disabled:opacity-50">
+          {paying ? "Đang xử lý..." : "Thanh toán"}
         </button>
       )}
     </div>

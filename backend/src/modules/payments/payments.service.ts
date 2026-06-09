@@ -47,11 +47,16 @@ export class PaymentsService {
     const hashSecret = this.configService.get<string>("VNPAY_HASH_SECRET")!;
     const vnpayUrl = this.configService.get<string>("VNPAY_URL")!;
     const returnUrl = this.configService.get<string>("VNPAY_RETURN_URL")!;
-    const ipnUrl = this.configService.get<string>("VNPAY_IPN_URL")!;
 
     const txnRef = `BK${bookingId}_${Date.now()}`;
     const date = new Date();
-    const createDate = date.toISOString().replace(/[-:T.Z]/g, "").slice(0, 14);
+    const gmt7 = (d: Date) => {
+      const offset = 7 * 60;
+      const local = new Date(d.getTime() + offset * 60 * 1000);
+      return local.toISOString().replace(/[-:T.Z]/g, "").slice(0, 14);
+    };
+    const createDate = gmt7(date);
+    const expireDate = gmt7(new Date(date.getTime() + 15 * 60 * 1000));
     const orderId = booking.bookingCode;
 
     const params: Record<string, string> = {
@@ -61,6 +66,7 @@ export class PaymentsService {
       vnp_Amount: String(Math.round(Number(booking.totalAmount) * 100)),
       vnp_CreateDate: createDate,
       vnp_CurrCode: "VND",
+      vnp_ExpireDate: expireDate,
       vnp_IpAddr: "127.0.0.1",
       vnp_Locale: "vn",
       vnp_OrderInfo: `Thanh toan booking ${orderId}`,
@@ -69,14 +75,21 @@ export class PaymentsService {
       vnp_TxnRef: txnRef,
     };
 
-    if (ipnUrl) params["vnp_IpnUrl"] = ipnUrl;
-
     const sortedKeys = Object.keys(params).sort();
-    const signData = sortedKeys.map((key) => `${key}=${params[key]}`).join("&");
+    const signData = sortedKeys
+      .map((key) => `${key}=${encodeURIComponent(params[key]).replace(/%20/g, "+")}`)
+      .join("&");
     const secureHash = crypto.createHmac("sha512", hashSecret).update(signData).digest("hex");
     params["vnp_SecureHash"] = secureHash;
 
-    const paymentUrl = `${vnpayUrl}?${new URLSearchParams(params).toString()}`;
+    const allKeys = Object.keys(params).sort();
+    const rawQuery = allKeys
+      .map((key) => `${key}=${encodeURIComponent(params[key]).replace(/%20/g, "+")}`)
+      .join("&");
+    const paymentUrl = `${vnpayUrl}?${rawQuery}`;
+    console.log("=== VNPAY FULL URL ===", paymentUrl);
+    console.log("=== VNPAY signData ===", signData);
+    console.log("=== VNPAY secureHash ===", secureHash);
 
     await this.prisma.payment.upsert({
       where: { bookingId },
@@ -94,7 +107,9 @@ export class PaymentsService {
     delete body["vnp_SecureHashType"];
 
     const sortedKeys = Object.keys(body).sort();
-    const signData = sortedKeys.map((key) => `${key}=${body[key]}`).join("&");
+    const signData = sortedKeys
+      .map((key) => `${key}=${encodeURIComponent(body[key]).replace(/%20/g, "+")}`)
+      .join("&");
     const computedHash = crypto.createHmac("sha512", hashSecret).update(signData).digest("hex");
 
     if (secureHash !== computedHash) {
@@ -140,10 +155,31 @@ export class PaymentsService {
     delete query["vnp_SecureHashType"];
 
     const sortedKeys = Object.keys(query).sort();
-    const signData = sortedKeys.map((key) => `${key}=${query[key]}`).join("&");
+    const signData = sortedKeys
+      .map((key) => `${key}=${encodeURIComponent(query[key]).replace(/%20/g, "+")}`)
+      .join("&");
     const computedHash = crypto.createHmac("sha512", hashSecret).update(signData).digest("hex");
 
     const isValid = secureHash === computedHash;
-    return { isValid, responseCode: query["vnp_ResponseCode"], message: "For UI display only" };
+    const responseCode = query["vnp_ResponseCode"];
+
+    if (isValid && responseCode === "00") {
+      const txnRef = query["vnp_TxnRef"];
+      const payment = await this.prisma.payment.findUnique({ where: { transactionRef: txnRef } });
+      if (payment && payment.status !== "SUCCESS") {
+        await this.prisma.$transaction([
+          this.prisma.payment.update({
+            where: { id: payment.id },
+            data: { status: "SUCCESS", vnpayResponseCode: responseCode, paidAt: new Date() },
+          }),
+          this.prisma.booking.update({
+            where: { id: payment.bookingId },
+            data: { status: "CONFIRMED" },
+          }),
+        ]);
+      }
+    }
+
+    return { isValid, responseCode };
   }
 }

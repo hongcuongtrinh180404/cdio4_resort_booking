@@ -425,6 +425,10 @@ function RoomsContent() {
                     key={room.id}
                     room={room}
                     onDetail={(id) => setModalRoomId(id)}
+                    checkIn={format(checkIn, "yyyy-MM-dd")}
+                    checkOut={format(checkOut, "yyyy-MM-dd")}
+                    adults={adults}
+                    children={children}
                   />
                 ))}
               </div>
@@ -438,7 +442,14 @@ function RoomsContent() {
         </section>
       </main>
 
-      <RoomDetailModal roomId={modalRoomId} onClose={() => setModalRoomId(null)} />
+      <RoomDetailModal
+        roomId={modalRoomId}
+        onClose={() => setModalRoomId(null)}
+        checkIn={format(checkIn, "yyyy-MM-dd")}
+        checkOut={format(checkOut, "yyyy-MM-dd")}
+        adults={adults}
+        children={children}
+      />
     </>
   );
 }

@@ -56,18 +56,35 @@ function NewBookingForm() {
   const searchParams = useSearchParams();
   const roomId = Number(searchParams.get("roomId")) || 0;
 
+  const initialCheckIn = (() => {
+    const v = searchParams.get("checkIn");
+    if (!v) return undefined;
+    const d = new Date(v);
+    return isNaN(d.getTime()) ? undefined : d;
+  })();
+  const initialCheckOut = (() => {
+    const v = searchParams.get("checkOut");
+    if (!v) return undefined;
+    const d = new Date(v);
+    return isNaN(d.getTime()) ? undefined : d;
+  })();
+  const initialGuests = (() => {
+    const v = searchParams.get("adults");
+    return v ? Math.max(1, Number(v)) : 2;
+  })();
+
   const [room, setRoom] = useState<RoomData | null>(null);
   const [services, setServices] = useState<ServiceData[]>([]);
   const [combos, setCombos] = useState<ComboData[]>([]);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [occupied, setOccupied] = useState<OccupiedRange[]>([]);
 
-  const [checkIn, setCheckIn] = useState<Date>();
-  const [checkOut, setCheckOut] = useState<Date>();
-  const [guests, setGuests] = useState(2);
+  const [checkIn, setCheckIn] = useState<Date | undefined>(initialCheckIn);
+  const [checkOut, setCheckOut] = useState<Date | undefined>(initialCheckOut);
+  const [guests, setGuests] = useState(initialGuests);
   const [selectedServices, setSelectedServices] = useState<Record<number, number>>({});
   const [selectedCombos, setSelectedCombos] = useState<Record<number, number>>({});
-  const [paymentMethod, setPaymentMethod] = useState<"VNPAY" | "VISA">("VNPAY");
+
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
@@ -182,14 +199,8 @@ function NewBookingForm() {
         checkOutDate: format(checkOut, "yyyy-MM-dd"),
         services: servicesPayload.length ? servicesPayload : undefined,
         combos: combosPayload.length ? combosPayload : undefined,
-        paymentMethod,
       });
 
-      if (paymentMethod === "VNPAY") {
-        const { paymentUrl } = await post<{ paymentUrl: string }>("/payments/create-url", { bookingId: booking.id });
-        window.location.href = paymentUrl;
-        return;
-      }
       router.push(`/bookings/${booking.id}`);
     } catch (err: any) {
       setError(err.body?.message ?? "Đặt phòng thất bại");
@@ -292,26 +303,7 @@ function NewBookingForm() {
               </div>
             </section>
 
-            {/* Payment Method */}
-            <section className="bg-surface rounded-xl border border-outline/50 p-6 space-y-4">
-              <h2 className="font-headline-sm text-headline-sm text-on-surface">Phương thức thanh toán</h2>
-              <div className="space-y-3">
-                <label className="flex items-center gap-3 p-4 rounded-lg border border-outline cursor-pointer has-[:checked]:border-primary has-[:checked]:bg-primary/5 transition-all">
-                  <input type="radio" name="paymentMethod" value="VNPAY" checked={paymentMethod === "VNPAY"} onChange={() => setPaymentMethod("VNPAY")} className="accent-primary h-4 w-4" />
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-primary-container rounded-lg flex items-center justify-center"><span className="material-symbols-outlined text-primary">account_balance</span></div>
-                    <div><p className="text-body-sm font-semibold text-on-surface">VNPay</p><p className="text-body-xs text-on-surface-variant">Chuyển khoản ngân hàng qua VNPay</p></div>
-                  </div>
-                </label>
-                <label className="flex items-center gap-3 p-4 rounded-lg border border-outline cursor-pointer has-[:checked]:border-primary has-[:checked]:bg-primary/5 transition-all">
-                  <input type="radio" name="paymentMethod" value="VISA" checked={paymentMethod === "VISA"} onChange={() => setPaymentMethod("VISA")} className="accent-primary h-4 w-4" />
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-primary-container rounded-lg flex items-center justify-center"><span className="material-symbols-outlined text-primary">credit_card</span></div>
-                    <div><p className="text-body-sm font-semibold text-on-surface">Visa / Mastercard</p><p className="text-body-xs text-on-surface-variant">Thanh toán qua thẻ quốc tế</p></div>
-                  </div>
-                </label>
-              </div>
-            </section>
+
           </div>
 
           {/* RIGHT — 2/5 (40%) */}
@@ -485,7 +477,7 @@ function NewBookingForm() {
                 </div>
 
                 <Button type="submit" disabled={submitting} className="w-full bg-primary text-on-primary py-3 rounded-lg font-semibold text-sm hover:bg-primary/95 disabled:opacity-50 transition-all mt-3">
-                  {submitting ? "Đang xử lý..." : paymentMethod === "VNPAY" ? "Thanh toán qua VNPay" : "Xác nhận đặt phòng"}
+                  {submitting ? "Đang xử lý..." : "Đặt phòng"}
                 </Button>
               </div>
             </div>
