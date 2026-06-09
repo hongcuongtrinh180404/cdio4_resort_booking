@@ -71,7 +71,7 @@ export default function ServicesPage() {
         <div
           className="absolute inset-0 bg-cover bg-center"
           style={{
-            backgroundImage: "url('https://images.unsplash.com/photo-1540555700478-4be289fbec6d?auto=format&fit=crop&w=1920&q=80')",
+            backgroundImage: "url('https://res.cloudinary.com/dzlqaeyly/image/upload/q_auto/f_auto/v1780993248/gate_dztzuy.png')",
           }}
         />
         <div className="absolute inset-0 hero-gradient backdrop-blur-[1px]" />

@@ -32,9 +32,15 @@ export function ComboCard({ combo, onDetail }: ComboCardProps) {
         <span className="absolute top-3 left-3 bg-primary/90 text-on-primary px-2.5 py-0.5 rounded-full text-label-caps text-xs font-semibold shadow-sm">
           Combo
         </span>
-        <span className="absolute bottom-3 right-3 bg-black/60 backdrop-blur-sm text-surface-bright px-2.5 py-0.5 rounded-md text-label-caps text-xs font-semibold shadow-sm">
-          Tiết kiệm {combo.items.length > 0 ? formatVND(combo.items.reduce((sum, i) => sum + i.service.price, 0) - combo.comboPrice) : 0}
-        </span>
+        {(() => {
+          const original = combo.items.reduce((sum, i) => sum + Number(i.service.price), 0);
+          const savings = original - Number(combo.comboPrice);
+          return savings > 0 ? (
+            <span className="absolute bottom-3 right-3 bg-black/60 backdrop-blur-sm text-surface-bright px-2.5 py-0.5 rounded-md text-label-caps text-xs font-semibold shadow-sm">
+              Tiết kiệm {formatVND(savings)}
+            </span>
+          ) : null;
+        })()}
       </div>
 
       <div className="p-5 flex flex-col justify-between flex-grow">

@@ -9,7 +9,6 @@ import { ServicesModule } from "./modules/services/services.module";
 import { ServiceCombosModule } from "./modules/service-combos/service-combos.module";
 import { BookingsModule } from "./modules/bookings/bookings.module";
 import { PaymentsModule } from "./modules/payments/payments.module";
-import { VouchersModule } from "./modules/vouchers/vouchers.module";
 import { WishlistModule } from "./modules/wishlist/wishlist.module";
 import { AdminModule } from "./modules/admin/admin.module";
 
@@ -25,7 +24,6 @@ import { AdminModule } from "./modules/admin/admin.module";
     ServiceCombosModule,
     BookingsModule,
     PaymentsModule,
-    VouchersModule,
     WishlistModule,
     AdminModule,
   ],

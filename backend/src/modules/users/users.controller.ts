@@ -1,4 +1,4 @@
-import { Controller, Get, Param, UseGuards } from "@nestjs/common";
+import { Controller, Get, Param, UseGuards, Request } from "@nestjs/common";
 import { ApiTags, ApiOperation } from "@nestjs/swagger";
 import { UsersService } from "./users.service";
 import { JwtAuthGuard } from "../../common/guards/jwt-auth.guard";
@@ -10,6 +10,13 @@ import { Role } from "../../common/enums";
 @Controller("users")
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
+
+  @Get("me")
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: "Get current user profile" })
+  getProfile(@Request() req: any) {
+    return this.usersService.findById(req.user.sub);
+  }
 
   @Get()
   @UseGuards(JwtAuthGuard, RolesGuard)

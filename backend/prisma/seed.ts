@@ -196,32 +196,33 @@ async function main() {
 
   // ========== SERVICES ==========
   const servicesData = [
-    { name: "Spa Massage", description: "Massage thư giãn toàn thân với tinh dầu thiên nhiên, giúp tái tạo năng lượng", price: 600000, imageUrls: ["https://images.unsplash.com/photo-1544161515-4ab6ce6db874?auto=format&fit=crop&w=800&q=80", "https://images.unsplash.com/photo-1600334089648-b0d9d3028eb2?auto=format&fit=crop&w=800&q=80"] },
-    { name: "Couple Massage", description: "Massage dành cho cặp đôi trong không gian riêng tư lãng mạn", price: 1000000, imageUrls: ["https://images.unsplash.com/photo-1600334125049-f2e36f4b0cfa?auto=format&fit=crop&w=800&q=80", "https://images.unsplash.com/photo-1580619305218-8423a7ef79b4?auto=format&fit=crop&w=800&q=80"] },
-    { name: "Sauna & Steam Bath", description: "Xông hơi khô và ướt kết hợp, thanh lọc cơ thể và thư giãn tinh thần", price: 350000, imageUrls: ["https://images.unsplash.com/photo-1545389336-cf090694435e?auto=format&fit=crop&w=800&q=80", "https://images.unsplash.com/photo-1586201375761-83865001e8ac?auto=format&fit=crop&w=800&q=80"] },
-    { name: "Airport Transfer", description: "Đưa đón sân bay 2 chiều bằng xe sang cao cấp", price: 500000, imageUrls: ["https://images.unsplash.com/photo-1553440569-bcc63803a83d?auto=format&fit=crop&w=800&q=80", "https://images.unsplash.com/photo-1464037866556-6812c9d1c72e?auto=format&fit=crop&w=800&q=80"] },
-    { name: "Private BBQ Dinner", description: "Bữa tối BBQ riêng tư bên bờ biển với thực đơn cao cấp", price: 800000, imageUrls: ["https://images.unsplash.com/photo-1555939594-58d7cb561ad1?auto=format&fit=crop&w=800&q=80", "https://images.unsplash.com/photo-1528605248644-14dd04022da1?auto=format&fit=crop&w=800&q=80"] },
-    { name: "Romantic Room Decoration", description: "Trang trí phòng lãng mạn với hoa tươi, nến thơm và rượu vang", price: 500000, imageUrls: ["https://images.unsplash.com/photo-1510076857177-7470076d4098?auto=format&fit=crop&w=800&q=80", "https://images.unsplash.com/photo-1583337130417-3346c1be7dee?auto=format&fit=crop&w=800&q=80"] },
-    { name: "Breakfast Buffet", description: "Buffet sáng đa dạng với ẩm thực Á - Âu tại nhà hàng", price: 250000, imageUrls: ["https://images.unsplash.com/photo-1550547660-d9450f859349?auto=format&fit=crop&w=800&q=80", "https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=800&q=80"] },
-    { name: "Floating Breakfast", description: "Bữa sáng độc đáo phục vụ trên bể bơi riêng", price: 350000, imageUrls: ["https://images.unsplash.com/photo-1565557623262-b51c2513a641?auto=format&fit=crop&w=800&q=80", "https://images.unsplash.com/photo-1600335895605-41cedb62bb2a?auto=format&fit=crop&w=800&q=80"] },
-    { name: "Laundry Service", description: "Dịch vụ giặt ủi nhanh chóng, tiện lợi trong ngày", price: 100000, imageUrls: ["https://images.unsplash.com/photo-1545173168-9f1947eebb7f?auto=format&fit=crop&w=800&q=80", "https://images.unsplash.com/photo-1523821741446-edb2b68bb7a0?auto=format&fit=crop&w=800&q=80"] },
-    { name: "Bicycle Rental", description: "Thuê xe đạp khám phá khu nghỉ dưỡng và vùng lân cận", price: 150000, imageUrls: ["https://images.unsplash.com/photo-1485965120184-e220f721d03e?auto=format&fit=crop&w=800&q=80", "https://images.unsplash.com/photo-1505705694340-019e1e335916?auto=format&fit=crop&w=800&q=80"] },
-    { name: "Kayak Rental", description: "Thuê kayak chèo thuyền trên biển, khám phá vịnh", price: 200000, imageUrls: ["https://images.unsplash.com/photo-1544551763-46a013bb70d5?auto=format&fit=crop&w=800&q=80", "https://images.unsplash.com/photo-1552034406-f75b4a3841e7?auto=format&fit=crop&w=800&q=80"] },
-    { name: "Yoga Class", description: "Lớp yoga buổi sáng cùng huấn luyện viên chuyên nghiệp", price: 300000, imageUrls: ["https://images.unsplash.com/photo-1545205597-3d9d02c29597?auto=format&fit=crop&w=800&q=80", "https://images.unsplash.com/photo-1552196563-55cd4e45efb3?auto=format&fit=crop&w=800&q=80"] },
-    { name: "Fitness Center Access", description: "Phòng tập gym hiện đại với đầy đủ trang thiết bị", price: 200000, imageUrls: ["https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&w=800&q=80", "https://images.unsplash.com/photo-1571902943202-507ec2618e8f?auto=format&fit=crop&w=800&q=80"] },
-    { name: "Babysitting Service", description: "Dịch vụ trông trẻ chuyên nghiệp cho gia đình có trẻ nhỏ", price: 400000, imageUrls: ["https://images.unsplash.com/photo-1585432959362-8145685b9e0d?auto=format&fit=crop&w=800&q=80", "https://images.unsplash.com/photo-1503454537195-1dcabb73ffb9?auto=format&fit=crop&w=800&q=80"] },
-    { name: "Photography Session", description: "Buổi chụp ảnh chuyên nghiệp tại các góc đẹp nhất resort", price: 1200000, imageUrls: ["https://images.unsplash.com/photo-1516035069371-29a1b244cc32?auto=format&fit=crop&w=800&q=80", "https://images.unsplash.com/photo-1554048612-b6a482bc67e5?auto=format&fit=crop&w=800&q=80"] },
-    { name: "Snorkeling Tour", description: "Tour lặn ngắm san hô và sinh vật biển tại rạn san hô", price: 500000, imageUrls: ["https://images.unsplash.com/photo-1546026423-cc4642628d2b?auto=format&fit=crop&w=800&q=80", "https://images.unsplash.com/photo-1582967788606-a171c1080cb0?auto=format&fit=crop&w=800&q=80"] },
-    { name: "Scuba Diving Experience", description: "Trải nghiệm lặn bình khí chuyên sâu cùng hướng dẫn viên", price: 1500000, imageUrls: ["https://images.unsplash.com/photo-1544551763-46a013bb70d5?auto=format&fit=crop&w=800&q=80", "https://images.unsplash.com/photo-1546267554-c2f8b31c3ad3?auto=format&fit=crop&w=800&q=80"] },
-    { name: "Sunset Cruise", description: "Du thuyền ngắm hoàng hôn trên biển với đồ uống miễn phí", price: 800000, imageUrls: ["https://images.unsplash.com/photo-1528127269322-539801943592?auto=format&fit=crop&w=800&q=80", "https://images.unsplash.com/photo-1559827291-baf8f44cb74e?auto=format&fit=crop&w=800&q=80"] },
-    { name: "Jet Ski Rental", description: "Thuê mô tô nước lướt sóng trên biển đầy phấn khích", price: 600000, imageUrls: ["https://images.unsplash.com/photo-1502680390469-be75c86b636f?auto=format&fit=crop&w=800&q=80", "https://images.unsplash.com/photo-1531854230226-ac04eefb0f4c?auto=format&fit=crop&w=800&q=80"] },
-    { name: "Fishing Trip", description: "Tour câu cá đại dương cùng ngư dân địa phương", price: 700000, imageUrls: ["https://images.unsplash.com/photo-1508873535684-277a3cbcc4e8?auto=format&fit=crop&w=800&q=80", "https://images.unsplash.com/photo-1495615080073-6b89c9839ce0?auto=format&fit=crop&w=800&q=80"] },
+    { name: "Spa Massage", description: "Massage thư giãn toàn thân với tinh dầu thiên nhiên, giúp tái tạo năng lượng", price: 600000, imageUrls: ["https://res.cloudinary.com/dzlqaeyly/image/upload/q_auto/f_auto/v1780992687/logo_v2hsgl.png", "https://res.cloudinary.com/dzlqaeyly/image/upload/q_auto/f_auto/v1780992687/logo_v2hsgl.png"] },
+    { name: "Couple Massage", description: "Massage dành cho cặp đôi trong không gian riêng tư lãng mạn", price: 1000000, imageUrls: ["https://res.cloudinary.com/dzlqaeyly/image/upload/q_auto/f_auto/v1780992687/logo_v2hsgl.png", "https://res.cloudinary.com/dzlqaeyly/image/upload/q_auto/f_auto/v1780992687/logo_v2hsgl.png"] },
+    { name: "Sauna & Steam Bath", description: "Xông hơi khô và ướt kết hợp, thanh lọc cơ thể và thư giãn tinh thần", price: 350000, imageUrls: ["https://res.cloudinary.com/dzlqaeyly/image/upload/q_auto/f_auto/v1780992687/logo_v2hsgl.png", "https://res.cloudinary.com/dzlqaeyly/image/upload/q_auto/f_auto/v1780992687/logo_v2hsgl.png"] },
+    { name: "Airport Transfer", description: "Đưa đón sân bay 2 chiều bằng xe sang cao cấp", price: 500000, imageUrls: ["https://res.cloudinary.com/dzlqaeyly/image/upload/q_auto/f_auto/v1780992687/logo_v2hsgl.png", "https://res.cloudinary.com/dzlqaeyly/image/upload/q_auto/f_auto/v1780992687/logo_v2hsgl.png"] },
+    { name: "Private BBQ Dinner", description: "Bữa tối BBQ riêng tư bên bờ biển với thực đơn cao cấp", price: 800000, imageUrls: ["https://res.cloudinary.com/dzlqaeyly/image/upload/q_auto/f_auto/v1780992687/logo_v2hsgl.png", "https://res.cloudinary.com/dzlqaeyly/image/upload/q_auto/f_auto/v1780992687/logo_v2hsgl.png"] },
+    { name: "Romantic Room Decoration", description: "Trang trí phòng lãng mạn với hoa tươi, nến thơm và rượu vang", price: 500000, imageUrls: ["https://res.cloudinary.com/dzlqaeyly/image/upload/q_auto/f_auto/v1780992687/logo_v2hsgl.png", "https://res.cloudinary.com/dzlqaeyly/image/upload/q_auto/f_auto/v1780992687/logo_v2hsgl.png"] },
+    { name: "Breakfast Buffet", description: "Buffet sáng đa dạng với ẩm thực Á - Âu tại nhà hàng", price: 250000, imageUrls: ["https://res.cloudinary.com/dzlqaeyly/image/upload/q_auto/f_auto/v1780992687/logo_v2hsgl.png", "https://res.cloudinary.com/dzlqaeyly/image/upload/q_auto/f_auto/v1780992687/logo_v2hsgl.png"] },
+    { name: "Floating Breakfast", description: "Bữa sáng độc đáo phục vụ trên bể bơi riêng", price: 350000, imageUrls: ["https://res.cloudinary.com/dzlqaeyly/image/upload/q_auto/f_auto/v1780992687/logo_v2hsgl.png", "https://res.cloudinary.com/dzlqaeyly/image/upload/q_auto/f_auto/v1780992687/logo_v2hsgl.png"] },
+    { name: "Laundry Service", description: "Dịch vụ giặt ủi nhanh chóng, tiện lợi trong ngày", price: 100000, imageUrls: ["https://res.cloudinary.com/dzlqaeyly/image/upload/q_auto/f_auto/v1780992687/logo_v2hsgl.png", "https://res.cloudinary.com/dzlqaeyly/image/upload/q_auto/f_auto/v1780992687/logo_v2hsgl.png"] },
+    { name: "Bicycle Rental", description: "Thuê xe đạp khám phá khu nghỉ dưỡng và vùng lân cận", price: 150000, imageUrls: ["https://res.cloudinary.com/dzlqaeyly/image/upload/q_auto/f_auto/v1780992687/logo_v2hsgl.png", "https://res.cloudinary.com/dzlqaeyly/image/upload/q_auto/f_auto/v1780992687/logo_v2hsgl.png"] },
+    { name: "Kayak Rental", description: "Thuê kayak chèo thuyền trên biển, khám phá vịnh", price: 200000, imageUrls: ["https://res.cloudinary.com/dzlqaeyly/image/upload/q_auto/f_auto/v1780992687/logo_v2hsgl.png", "https://res.cloudinary.com/dzlqaeyly/image/upload/q_auto/f_auto/v1780992687/logo_v2hsgl.png"] },
+    { name: "Yoga Class", description: "Lớp yoga buổi sáng cùng huấn luyện viên chuyên nghiệp", price: 300000, imageUrls: ["https://res.cloudinary.com/dzlqaeyly/image/upload/q_auto/f_auto/v1780992687/logo_v2hsgl.png", "https://res.cloudinary.com/dzlqaeyly/image/upload/q_auto/f_auto/v1780992687/logo_v2hsgl.png"] },
+    { name: "Fitness Center Access", description: "Phòng tập gym hiện đại với đầy đủ trang thiết bị", price: 200000, imageUrls: ["https://res.cloudinary.com/dzlqaeyly/image/upload/q_auto/f_auto/v1780992687/logo_v2hsgl.png", "https://res.cloudinary.com/dzlqaeyly/image/upload/q_auto/f_auto/v1780992687/logo_v2hsgl.png"] },
+    { name: "Babysitting Service", description: "Dịch vụ trông trẻ chuyên nghiệp cho gia đình có trẻ nhỏ", price: 400000, imageUrls: ["https://res.cloudinary.com/dzlqaeyly/image/upload/q_auto/f_auto/v1780992687/logo_v2hsgl.png", "https://res.cloudinary.com/dzlqaeyly/image/upload/q_auto/f_auto/v1780992687/logo_v2hsgl.png"] },
+    { name: "Photography Session", description: "Buổi chụp ảnh chuyên nghiệp tại các góc đẹp nhất resort", price: 1200000, imageUrls: ["https://res.cloudinary.com/dzlqaeyly/image/upload/q_auto/f_auto/v1780992687/logo_v2hsgl.png", "https://res.cloudinary.com/dzlqaeyly/image/upload/q_auto/f_auto/v1780992687/logo_v2hsgl.png"] },
+    { name: "Snorkeling Tour", description: "Tour lặn ngắm san hô và sinh vật biển tại rạn san hô", price: 500000, imageUrls: ["https://res.cloudinary.com/dzlqaeyly/image/upload/q_auto/f_auto/v1780992687/logo_v2hsgl.png", "https://res.cloudinary.com/dzlqaeyly/image/upload/q_auto/f_auto/v1780992687/logo_v2hsgl.png"] },
+    { name: "Scuba Diving Experience", description: "Trải nghiệm lặn bình khí chuyên sâu cùng hướng dẫn viên", price: 1500000, imageUrls: ["https://res.cloudinary.com/dzlqaeyly/image/upload/q_auto/f_auto/v1780992687/logo_v2hsgl.png", "https://res.cloudinary.com/dzlqaeyly/image/upload/q_auto/f_auto/v1780992687/logo_v2hsgl.png"] },
+    { name: "Sunset Cruise", description: "Du thuyền ngắm hoàng hôn trên biển với đồ uống miễn phí", price: 800000, imageUrls: ["https://res.cloudinary.com/dzlqaeyly/image/upload/q_auto/f_auto/v1780992687/logo_v2hsgl.png", "https://res.cloudinary.com/dzlqaeyly/image/upload/q_auto/f_auto/v1780992687/logo_v2hsgl.png"] },
+    { name: "Jet Ski Rental", description: "Thuê mô tô nước lướt sóng trên biển đầy phấn khích", price: 600000, imageUrls: ["https://res.cloudinary.com/dzlqaeyly/image/upload/q_auto/f_auto/v1780992687/logo_v2hsgl.png", "https://res.cloudinary.com/dzlqaeyly/image/upload/q_auto/f_auto/v1780992687/logo_v2hsgl.png"] },
+    { name: "Fishing Trip", description: "Tour câu cá đại dương cùng ngư dân địa phương", price: 700000, imageUrls: ["https://res.cloudinary.com/dzlqaeyly/image/upload/q_auto/f_auto/v1780992687/logo_v2hsgl.png", "https://res.cloudinary.com/dzlqaeyly/image/upload/q_auto/f_auto/v1780992687/logo_v2hsgl.png"] },
   ];
 
   for (const svc of servicesData) {
+    const { name, ...rest } = svc;
     await prisma.service.upsert({
-      where: { name: svc.name },
-      update: {},
+      where: { name },
+      update: rest,
       create: svc,
     });
   }
@@ -252,49 +253,49 @@ async function main() {
       name: "Ocean Discovery Package",
       description: "Khám phá đại dương với các hoạt động biển hấp dẫn",
       comboPrice: 1400000,
-      imageUrls: ["https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=800&q=80", "https://images.unsplash.com/photo-1544551763-46a013bb70d5?auto=format&fit=crop&w=800&q=80"],
+      imageUrls: ["https://res.cloudinary.com/dzlqaeyly/image/upload/q_auto/f_auto/v1780992687/logo_v2hsgl.png", "https://res.cloudinary.com/dzlqaeyly/image/upload/q_auto/f_auto/v1780992687/logo_v2hsgl.png"],
       serviceIds: [snorkelingId, kayakId, photoId],
     },
     {
       name: "Luxury Sea Experience",
       description: "Trải nghiệm biển đẳng cấp dành cho kỳ nghỉ thượng hạng",
       comboPrice: 2500000,
-      imageUrls: ["https://images.unsplash.com/photo-1559827291-baf8f44cb74e?auto=format&fit=crop&w=800&q=80", "https://images.unsplash.com/photo-1570733117311-d990c3816ccb?auto=format&fit=crop&w=800&q=80"],
+      imageUrls: ["https://res.cloudinary.com/dzlqaeyly/image/upload/q_auto/f_auto/v1780992687/logo_v2hsgl.png", "https://res.cloudinary.com/dzlqaeyly/image/upload/q_auto/f_auto/v1780992687/logo_v2hsgl.png"],
       serviceIds: [airportId, sunsetId, bbqId, photoId],
     },
     {
       name: "Water Adventure Package",
       description: "Trọn gói thể thao biển cho người ưa mạo hiểm",
       comboPrice: 1000000,
-      imageUrls: ["https://images.unsplash.com/photo-1531854230226-ac04eefb0f4c?auto=format&fit=crop&w=800&q=80", "https://images.unsplash.com/photo-1546026423-cc4642628d2b?auto=format&fit=crop&w=800&q=80"],
+      imageUrls: ["https://res.cloudinary.com/dzlqaeyly/image/upload/q_auto/f_auto/v1780992687/logo_v2hsgl.png", "https://res.cloudinary.com/dzlqaeyly/image/upload/q_auto/f_auto/v1780992687/logo_v2hsgl.png"],
       serviceIds: [snorkelingId, jetSkiId, kayakId],
     },
     {
       name: "Couple Romance Package",
       description: "Dành cho các cặp đôi tìm kiếm không gian lãng mạn",
       comboPrice: 1700000,
-      imageUrls: ["https://images.unsplash.com/photo-1600334125049-f2e36f4b0cfa?auto=format&fit=crop&w=800&q=80", "https://images.unsplash.com/photo-1510076857177-7470076d4098?auto=format&fit=crop&w=800&q=80"],
+      imageUrls: ["https://res.cloudinary.com/dzlqaeyly/image/upload/q_auto/f_auto/v1780992687/logo_v2hsgl.png", "https://res.cloudinary.com/dzlqaeyly/image/upload/q_auto/f_auto/v1780992687/logo_v2hsgl.png"],
       serviceIds: [coupleMassageId, roomDecorId, bbqId],
     },
     {
       name: "Honeymoon Experience",
       description: "Gói trăng mật hoàn hảo cho kỳ nghỉ tuần trăng mật đáng nhớ",
       comboPrice: 2300000,
-      imageUrls: ["https://images.unsplash.com/photo-1583337130417-3346c1be7dee?auto=format&fit=crop&w=800&q=80", "https://images.unsplash.com/photo-1565557623262-b51c2513a641?auto=format&fit=crop&w=800&q=80"],
+      imageUrls: ["https://res.cloudinary.com/dzlqaeyly/image/upload/q_auto/f_auto/v1780992687/logo_v2hsgl.png", "https://res.cloudinary.com/dzlqaeyly/image/upload/q_auto/f_auto/v1780992687/logo_v2hsgl.png"],
       serviceIds: [coupleMassageId, floatingBreakfastId, photoId, roomDecorId],
     },
     {
       name: "Family Vacation Package",
       description: "Cho gia đình có trẻ em, đảm bảo kỳ nghỉ vui vẻ cho cả nhà",
       comboPrice: 600000,
-      imageUrls: ["https://images.unsplash.com/photo-1503454537195-1dcabb73ffb9?auto=format&fit=crop&w=800&q=80", "https://images.unsplash.com/photo-1585432959362-8145685b9e0d?auto=format&fit=crop&w=800&q=80"],
+      imageUrls: ["https://res.cloudinary.com/dzlqaeyly/image/upload/q_auto/f_auto/v1780992687/logo_v2hsgl.png", "https://res.cloudinary.com/dzlqaeyly/image/upload/q_auto/f_auto/v1780992687/logo_v2hsgl.png"],
       serviceIds: [breakfastId, bicycleId, babysitId],
     },
     {
       name: "Premium Resort Experience",
       description: "Combo cao cấp bao gồm tất cả trải nghiệm đẳng cấp nhất",
       comboPrice: 2900000,
-      imageUrls: ["https://images.unsplash.com/photo-1555939594-58d7cb561ad1?auto=format&fit=crop&w=800&q=80", "https://images.unsplash.com/photo-1528127269322-539801943592?auto=format&fit=crop&w=800&q=80"],
+      imageUrls: ["https://res.cloudinary.com/dzlqaeyly/image/upload/q_auto/f_auto/v1780992687/logo_v2hsgl.png", "https://res.cloudinary.com/dzlqaeyly/image/upload/q_auto/f_auto/v1780992687/logo_v2hsgl.png"],
       serviceIds: [airportId, coupleMassageId, floatingBreakfastId, bbqId, photoId],
     },
   ];
@@ -303,24 +304,11 @@ async function main() {
     const { serviceIds, ...comboData } = combo;
     await prisma.serviceCombo.upsert({
       where: { name: combo.name },
-      update: {},
+      update: comboData,
       create: {
         ...comboData,
         items: { create: serviceIds.map((sid) => ({ serviceId: sid })) },
       },
-    });
-  }
-
-  const vouchers = [
-    { code: "WELCOME10", description: "Giảm 10% cho lần đầu đặt phòng", discountType: "PERCENTAGE" as const, discountValue: 10, maxUsage: 100, startDate: new Date("2025-01-01"), endDate: new Date("2027-12-31") },
-    { code: "SUMMER500", description: "Giảm 500,000 VND cho kỳ nghỉ hè", discountType: "FIXED_AMOUNT" as const, discountValue: 500000, maxUsage: 50, startDate: new Date("2025-06-01"), endDate: new Date("2026-09-30") },
-    { code: "VIP1000", description: "Giảm 1,000,000 VND cho khách VIP", discountType: "FIXED_AMOUNT" as const, discountValue: 1000000, maxUsage: 20, startDate: new Date("2025-01-01"), endDate: new Date("2026-12-31") },
-  ];
-  for (const voucher of vouchers) {
-    await prisma.voucher.upsert({
-      where: { code: voucher.code },
-      update: {},
-      create: voucher,
     });
   }
 

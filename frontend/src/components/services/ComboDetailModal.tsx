@@ -54,7 +54,7 @@ export function ComboDetailModal({ comboId, onClose }: Props) {
 
   if (!comboId) return null;
 
-  const originalTotal = combo?.items.reduce((sum, i) => sum + i.service.price, 0) ?? 0;
+  const originalTotal = combo?.items.reduce((sum, i) => sum + Number(i.service.price), 0) ?? 0;
   const savings = originalTotal - (combo?.comboPrice ?? 0);
 
   return (

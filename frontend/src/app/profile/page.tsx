@@ -21,8 +21,7 @@ export default function ProfilePage() {
 
   useEffect(() => {
     if (!isAuthenticated()) { router.push("/login"); return; }
-    const user = getUser();
-    if (user) get<UserProfile>(`/users/${user.sub}`).then(setProfile);
+    get<UserProfile>("/users/me").then(setProfile);
   }, [router]);
 
   if (!profile) return <div className="p-6">Đang tải...</div>;
@@ -39,7 +38,7 @@ export default function ProfilePage() {
       <div className="mt-4 flex gap-4">
         <Link href="/profile/bookings" className="text-blue-600 hover:underline">Booking của tôi</Link>
         <Link href="/profile/wishlist" className="text-blue-600 hover:underline">Yêu thích</Link>
-        <Link href="/profile/vouchers" className="text-blue-600 hover:underline">Voucher</Link>
+
       </div>
     </div>
   );

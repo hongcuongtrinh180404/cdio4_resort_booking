@@ -2,14 +2,14 @@ import { Injectable, NotFoundException, BadRequestException, ForbiddenException 
 import { PrismaService } from "../../database/prisma/prisma.service";
 import { CreateBookingDto } from "./dto/create-booking.dto";
 import { QueryBookingDto } from "./dto/query-booking.dto";
-import { BookingStatus } from "@prisma/client";
+import { BookingStatus, PaymentGateway } from "@prisma/client";
 
 @Injectable()
 export class BookingsService {
   constructor(private readonly prisma: PrismaService) { }
 
   async create(dto: CreateBookingDto, userId: number) {
-    const { roomId, checkInDate, checkOutDate, serviceIds, comboIds, voucherCode } = dto;
+    const { roomId, checkInDate, checkOutDate, services, combos, paymentMethod } = dto;
 
     const checkIn = new Date(checkInDate);
     const checkOut = new Date(checkOutDate);
@@ -31,40 +31,32 @@ export class BookingsService {
 
       const room = await tx.room.findUnique({ where: { id: roomId } });
       if (!room || room.status !== "AVAILABLE") throw new BadRequestException("Room not available");
-      const roomPricePerNight = room.pricePerNight;
 
       let serviceTotal = 0;
-      if (serviceIds?.length) {
-        const services = await tx.service.findMany({ where: { id: { in: serviceIds }, isActive: true } });
-        serviceTotal = Number(services.reduce((sum, s) => sum + Number(s.price), 0));
+      let serviceDetails: any[] = [];
+      if (services?.length) {
+        const serviceIds = services.map((s) => s.serviceId);
+        serviceDetails = await tx.service.findMany({ where: { id: { in: serviceIds }, isActive: true } });
+        for (const item of services) {
+          const svc = serviceDetails.find((s) => s.id === item.serviceId);
+          if (!svc) throw new BadRequestException(`Service id ${item.serviceId} not found`);
+          serviceTotal += Number(svc.price) * item.quantity;
+        }
       }
 
       let comboTotal = 0;
-      if (comboIds?.length) {
-        const combos = await tx.serviceCombo.findMany({ where: { id: { in: comboIds }, isActive: true } });
-        comboTotal = Number(combos.reduce((sum, c) => sum + Number(c.comboPrice), 0));
+      let comboDetails: any[] = [];
+      if (combos?.length) {
+        const comboIds = combos.map((c) => c.comboId);
+        comboDetails = await tx.serviceCombo.findMany({ where: { id: { in: comboIds }, isActive: true } });
+        for (const item of combos) {
+          const cmb = comboDetails.find((c) => c.id === item.comboId);
+          if (!cmb) throw new BadRequestException(`Combo id ${item.comboId} not found`);
+          comboTotal += Number(cmb.comboPrice) * item.quantity;
+        }
       }
 
-      let discountAmount = 0;
-      let voucherId: number | null = null;
-      if (voucherCode) {
-        const voucher = await tx.voucher.findUnique({ where: { code: voucherCode } });
-        if (!voucher || !voucher.isActive || voucher.usedCount >= voucher.maxUsage) {
-          throw new BadRequestException("Invalid voucher");
-        }
-        const now = new Date();
-        if (now < voucher.startDate || now > voucher.endDate) {
-          throw new BadRequestException("Voucher expired");
-        }
-        const subtotal = numberOfNights * Number(roomPricePerNight) + serviceTotal + comboTotal;
-        discountAmount = voucher.discountType === "PERCENTAGE"
-          ? Math.round(Number(subtotal) * Number(voucher.discountValue) / 100)
-          : Number(voucher.discountValue);
-        voucherId = voucher.id;
-        await tx.voucher.update({ where: { id: voucher.id }, data: { usedCount: { increment: 1 } } });
-      }
-
-      const totalAmount = numberOfNights * Number(roomPricePerNight) + serviceTotal + comboTotal - discountAmount;
+      const totalAmount = numberOfNights * Number(room.pricePerNight) + serviceTotal + comboTotal;
       const bookingCode = `BK${Date.now()}`;
       const expiresAt = new Date(Date.now() + 2 * 60 * 1000);
 
@@ -73,40 +65,48 @@ export class BookingsService {
           bookingCode,
           userId,
           roomId,
-          voucherId,
           checkInDate: checkIn,
           checkOutDate: checkOut,
           numberOfNights,
-          roomPricePerNight,
+          roomPricePerNight: room.pricePerNight,
           serviceTotal,
           comboTotal,
-          discountAmount,
           totalAmount,
           expiresAt,
         },
       });
 
-      if (serviceIds?.length) {
-        const services = await tx.service.findMany({ where: { id: { in: serviceIds } } });
+      if (services?.length) {
         await tx.bookingService.createMany({
           data: services.map((s) => ({
             bookingId: booking.id,
-            serviceId: s.id,
-            quantity: 1,
-            priceSnapshot: s.price,
+            serviceId: s.serviceId,
+            quantity: s.quantity,
+            priceSnapshot: serviceDetails.find((d) => d.id === s.serviceId)!.price,
           })),
         });
       }
 
-      if (comboIds?.length) {
-        const combos = await tx.serviceCombo.findMany({ where: { id: { in: comboIds } } });
+      if (combos?.length) {
         await tx.bookingCombo.createMany({
           data: combos.map((c) => ({
             bookingId: booking.id,
-            comboId: c.id,
-            quantity: 1,
-            comboPriceSnapshot: c.comboPrice,
+            comboId: c.comboId,
+            quantity: c.quantity,
+            comboPriceSnapshot: comboDetails.find((d) => d.id === c.comboId)!.comboPrice,
           })),
+        });
+      }
+
+      if (paymentMethod && paymentMethod !== "VNPAY") {
+        await tx.payment.create({
+          data: {
+            bookingId: booking.id,
+            amount: totalAmount,
+            gateway: paymentMethod as PaymentGateway,
+            transactionRef: `TXN${Date.now()}`,
+            status: "PENDING",
+          },
         });
       }
 
@@ -121,7 +121,6 @@ export class BookingsService {
         room: { include: { roomType: true } },
         services: { include: { service: true } },
         combos: { include: { combo: true } },
-        voucher: true,
         payment: true,
       },
     });
@@ -134,21 +133,13 @@ export class BookingsService {
         status: "PENDING",
         expiresAt: { lt: now },
       },
-      select: { id: true, voucherId: true },
+      select: { id: true },
     });
 
     for (const booking of expired) {
-      await this.prisma.$transaction(async (tx) => {
-        if (booking.voucherId) {
-          await tx.voucher.update({
-            where: { id: booking.voucherId },
-            data: { usedCount: { decrement: 1 } },
-          });
-        }
-        await tx.booking.update({
-          where: { id: booking.id },
-          data: { status: "CANCELLED" },
-        });
+      await this.prisma.booking.update({
+        where: { id: booking.id },
+        data: { status: "CANCELLED" },
       });
     }
 
@@ -195,7 +186,6 @@ export class BookingsService {
         room: { include: { roomType: true, images: true } },
         services: { include: { service: true } },
         combos: { include: { combo: true } },
-        voucher: true,
         payment: true,
       },
     });
@@ -211,22 +201,10 @@ export class BookingsService {
     }
     if (booking.status === "CANCELLED") throw new BadRequestException("Booking already cancelled");
     if (booking.status === "CHECKED_OUT") throw new BadRequestException("Cannot cancel checked-out booking");
-    if (booking.status === "PENDING" && new Date() > booking.expiresAt) {
-      throw new BadRequestException("Booking has already expired");
-    }
 
-    return this.prisma.$transaction(async (tx) => {
-      if (booking.voucherId) {
-        await tx.voucher.update({
-          where: { id: booking.voucherId },
-          data: { usedCount: { decrement: 1 } },
-        });
-      }
-
-      return tx.booking.update({
-        where: { id },
-        data: { status: "CANCELLED" },
-      });
+    return this.prisma.booking.update({
+      where: { id },
+      data: { status: "CANCELLED" },
     });
   }
 }
