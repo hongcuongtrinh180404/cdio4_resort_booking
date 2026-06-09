@@ -367,7 +367,7 @@ function NewBookingForm() {
                             <p className="text-body-sm font-semibold text-on-surface leading-tight">{svc.name}</p>
                             <p className="text-body-xs text-on-surface-variant mt-0.5 line-clamp-1">{svc.description}</p>
                           </div>
-                          <div className="flex items-center justify-between mt-1">
+                          <div className="flex items-center justify-between mt-auto pt-1">
                             <span className="text-body-sm font-bold text-primary">{formatVND(svc.price)}</span>
                             {qty > 0 ? (
                               <div className="flex items-center gap-1 bg-surface-container-high rounded-md px-1 py-0.5" onClick={(e) => e.stopPropagation()}>
@@ -376,7 +376,9 @@ function NewBookingForm() {
                                 <button type="button" onClick={() => updateServiceQty(svc.id, 1)} className="h-6 w-6 flex items-center justify-center text-primary rounded"><Plus className="h-3 w-3" /></button>
                               </div>
                             ) : (
-                              <button type="button" className="text-label-caps text-xs text-primary font-semibold hover:underline">Thêm</button>
+                              <button type="button" onClick={(e) => { e.stopPropagation(); updateServiceQty(svc.id, 1); }} className="h-8 w-8 flex items-center justify-center rounded-full border border-primary text-primary hover:bg-primary/5 transition-all">
+                                <span className="material-symbols-outlined text-lg">add_shopping_cart</span>
+                              </button>
                             )}
                           </div>
                         </div>
@@ -419,7 +421,7 @@ function NewBookingForm() {
                             )}
                           </div>
                           <div className="w-[60%] p-3 flex flex-col justify-between">
-                            <div>
+                            <div className="flex-1">
                               <p className="text-body-sm font-semibold text-on-surface leading-tight">{cmb.name}</p>
                               <div className="mt-1 space-y-0.5">
                                 {cmb.items.map((item) => (
@@ -430,16 +432,24 @@ function NewBookingForm() {
                                 ))}
                               </div>
                             </div>
-                            <div className="flex items-center justify-between mt-1">
+                            <div className="mt-2 pt-1">
                               <div className="flex items-baseline gap-1">
                                 <span className="text-body-sm font-bold text-primary">{formatVND(cmb.comboPrice)}</span>
                                 {originalTotal > 0 && <span className="text-[10px] text-on-surface-variant line-through">{formatVND(originalTotal)}</span>}
                               </div>
-                              {isSelected ? (
-                                <button type="button" onClick={() => toggleCombo(cmb.id)} className="text-label-caps text-xs text-error font-semibold hover:underline">Bỏ chọn</button>
-                              ) : (
-                                <button type="button" onClick={() => toggleCombo(cmb.id)} className="px-3 py-1 bg-primary text-on-primary rounded-lg text-label-caps text-xs font-semibold hover:bg-primary/95 transition-all active:scale-95">Thêm combo</button>
-                              )}
+                              <div className="flex justify-end mt-1">
+                                {isSelected ? (
+                                  <div className="flex items-center gap-1 bg-surface-container-high rounded-md px-1 py-0.5" onClick={(e) => e.stopPropagation()}>
+                                    <button type="button" onClick={() => { const id = cmb.id; setSelectedCombos((prev) => { const q = (prev[id] ?? 0) - 1; if (q <= 0) { const { [id]: _, ...rest } = prev; return rest; } return { ...prev, [id]: q }; }); }} className="h-6 w-6 flex items-center justify-center text-on-surface-variant hover:text-on-surface rounded"><Minus className="h-3 w-3" /></button>
+                                    <span className="text-body-sm font-semibold w-5 text-center tabular-nums">{selectedCombos[cmb.id]}</span>
+                                    <button type="button" onClick={() => setSelectedCombos((prev) => ({ ...prev, [cmb.id]: (prev[cmb.id] ?? 0) + 1 }))} className="h-6 w-6 flex items-center justify-center text-primary rounded"><Plus className="h-3 w-3" /></button>
+                                  </div>
+                                ) : (
+                                  <button type="button" onClick={() => toggleCombo(cmb.id)} className="h-8 w-8 flex items-center justify-center rounded-full border border-primary text-primary hover:bg-primary/5 transition-all">
+                                    <span className="material-symbols-outlined text-lg">add_shopping_cart</span>
+                                  </button>
+                                )}
+                              </div>
                             </div>
                           </div>
                         </div>
