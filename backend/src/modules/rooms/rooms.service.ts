@@ -76,6 +76,29 @@ export class RoomsService {
     return this.prisma.amenity.findMany({ orderBy: { name: "asc" } });
   }
 
+  async getAvailability(id: number) {
+    const room = await this.prisma.room.findUnique({ where: { id } });
+    if (!room) throw new NotFoundException("Room not found");
+
+    const bookings = await this.prisma.booking.findMany({
+      where: {
+        roomId: id,
+        status: { in: [BookingStatus.PENDING, BookingStatus.CONFIRMED, BookingStatus.CHECKED_IN] },
+      },
+      select: {
+        checkInDate: true,
+        checkOutDate: true,
+      },
+    });
+
+    const occupied: { from: string; to: string }[] = bookings.map((b) => ({
+      from: b.checkInDate.toISOString().split("T")[0],
+      to: b.checkOutDate.toISOString().split("T")[0],
+    }));
+
+    return { occupied };
+  }
+
   create(dto: CreateRoomDto) {
     return this.prisma.room.create({
       data: {
