@@ -1,6 +1,8 @@
 "use client";
 
+import { useState, useEffect, useCallback } from "react";
 import { formatVND } from "@/lib/utils";
+import Link from "next/link";
 
 interface RoomAmenity {
   amenity: { id: number; name: string; icon: string | null };
@@ -17,7 +19,8 @@ interface RoomCardProps {
     images: { imageUrl: string }[];
     amenities?: RoomAmenity[];
   };
-  onDetail: (id: number) => void;
+  isWishlisted?: boolean;
+  onToggleWishlist?: (roomId: number) => void;
   checkIn?: string;
   checkOut?: string;
   adults?: number;
@@ -36,9 +39,28 @@ function getBadge(room: RoomCardProps["room"]): { label: string; className: stri
   return null;
 }
 
-export function RoomCard({ room, onDetail, checkIn, checkOut, adults, children }: RoomCardProps) {
+export function RoomCard({ room, isWishlisted = false, onToggleWishlist, checkIn, checkOut, adults, children }: RoomCardProps) {
   const badge = getBadge(room);
   const displayAmenities = room.amenities?.slice(0, 4) ?? [];
+  const [animating, setAnimating] = useState(false);
+  const [showBounce, setShowBounce] = useState(false);
+
+  useEffect(() => {
+    if (isWishlisted) {
+      const t = setTimeout(() => setShowBounce(true), 420);
+      return () => clearTimeout(t);
+    }
+    setShowBounce(false);
+  }, [isWishlisted]);
+
+  const handleToggle = useCallback(() => {
+    if (animating) return;
+    setAnimating(true);
+    onToggleWishlist?.(room.id);
+    setTimeout(() => setAnimating(false), 700);
+  }, [animating, onToggleWishlist, room.id]);
+
+  const detailUrl = `/rooms/${room.id}${checkIn ? `?checkIn=${checkIn}` : ""}${checkOut ? `&checkOut=${checkOut}` : ""}${adults ? `&adults=${adults}` : ""}${children ? `&children=${children}` : ""}`;
 
   return (
     <div className="group bg-surface rounded-xl overflow-hidden hover:shadow-xl transition-all duration-300 flex flex-col border border-outline/50">
@@ -62,20 +84,50 @@ export function RoomCard({ room, onDetail, checkIn, checkOut, adults, children }
         <span className="absolute bottom-3 left-3 bg-black/60 backdrop-blur-sm text-surface-bright px-2.5 py-0.5 rounded-md text-label-caps text-xs font-semibold shadow-sm">
           #{String(room.roomNumber).padStart(3, '0')}
         </span>
-        <button className="absolute top-3 right-3 bg-surface/80 backdrop-blur-sm p-1.5 rounded-full hover:bg-primary hover:text-on-primary transition-colors shadow-sm">
-          <span className="material-symbols-outlined text-lg">favorite</span>
+
+        {/* Wishlist heart */}
+        <button
+          onClick={handleToggle}
+          disabled={animating}
+          className="absolute top-3 right-3 bg-surface/80 backdrop-blur-sm p-1.5 rounded-full hover:bg-primary hover:text-on-primary transition-colors shadow-sm z-10"
+        >
+          <div className="relative w-5 h-5 flex items-center justify-center">
+            <span className="material-symbols-outlined text-lg text-gray-400" style={{ fontVariationSettings: "'FILL' 0" }}>
+              favorite
+            </span>
+            <span
+              className="absolute inset-0 flex items-center justify-center material-symbols-outlined text-lg"
+              style={{
+                color: "#FF97D0",
+                fontVariationSettings: "'FILL' 1",
+                clipPath: isWishlisted ? "inset(0 0 0 0)" : "inset(100% 0 0 0)",
+                transition: "clip-path 0.4s cubic-bezier(0.4, 0, 0.2, 1)",
+              }}
+            >
+              favorite
+            </span>
+            {showBounce && (
+              <span
+                className="absolute inset-0 flex items-center justify-center material-symbols-outlined text-lg heart-pop"
+                style={{ color: "#FF97D0", fontVariationSettings: "'FILL' 1" }}
+                onAnimationEnd={() => setShowBounce(false)}
+              >
+                favorite
+              </span>
+            )}
+          </div>
         </button>
       </div>
 
       <div className="p-5 flex flex-col justify-between flex-grow">
         <div>
           <div className="flex justify-between items-start mb-2">
-            <h3
-              className="font-headline-sm text-headline-sm text-on-surface group-hover:text-primary transition-colors cursor-pointer"
-              onClick={() => onDetail(room.id)}
+            <Link
+              href={detailUrl}
+              className="font-headline-sm text-headline-sm text-on-surface group-hover:text-primary transition-colors"
             >
               {room.name}
-            </h3>
+            </Link>
           </div>
 
           <div className="flex items-center gap-3 mb-4 text-on-surface-variant">
@@ -121,21 +173,34 @@ export function RoomCard({ room, onDetail, checkIn, checkOut, adults, children }
             <span className="text-body-sm text-on-surface-variant ml-1">/đêm</span>
           </div>
           <div className="flex gap-2">
-            <button
-              onClick={() => onDetail(room.id)}
+            <Link
+              href={detailUrl}
               className="px-3 py-1.5 text-primary border border-primary rounded-lg text-label-caps text-xs font-semibold hover:bg-primary/5 transition-all"
             >
               Chi tiết
-            </button>
-            <a
+            </Link>
+            <Link
               href={`/bookings/new?roomId=${room.id}${checkIn ? `&checkIn=${checkIn}` : ""}${checkOut ? `&checkOut=${checkOut}` : ""}${adults ? `&adults=${adults}` : ""}${children ? `&children=${children}` : ""}`}
               className="px-3 py-1.5 bg-primary text-on-primary rounded-lg text-label-caps text-xs font-semibold hover:bg-primary/95 transition-all active:scale-95"
             >
               Đặt ngay
-            </a>
+            </Link>
           </div>
         </div>
       </div>
+
+      <style>{`
+        @keyframes heartPop {
+          0% { transform: scale(1); }
+          30% { transform: scale(1.4); }
+          50% { transform: scale(0.85); }
+          70% { transform: scale(1.15); }
+          100% { transform: scale(1); }
+        }
+        .heart-pop {
+          animation: heartPop 0.5s ease-out;
+        }
+      `}</style>
     </div>
   );
 }

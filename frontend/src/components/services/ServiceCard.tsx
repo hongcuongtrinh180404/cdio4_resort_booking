@@ -1,6 +1,7 @@
 "use client";
 
 import { formatVND } from "@/lib/utils";
+import Link from "next/link";
 
 interface ServiceCardProps {
   service: {
@@ -10,10 +11,9 @@ interface ServiceCardProps {
     price: number;
     imageUrls: string[];
   };
-  onDetail: (id: number) => void;
 }
 
-export function ServiceCard({ service, onDetail }: ServiceCardProps) {
+export function ServiceCard({ service }: ServiceCardProps) {
   return (
     <div className="group bg-surface rounded-xl overflow-hidden hover:shadow-xl transition-all duration-300 flex flex-col border border-outline/50">
       <div className="relative h-48 overflow-hidden">
@@ -46,12 +46,12 @@ export function ServiceCard({ service, onDetail }: ServiceCardProps) {
               {formatVND(service.price)}
             </span>
           </div>
-          <button
-            onClick={() => onDetail(service.id)}
+          <Link
+            href={`/services/${service.id}`}
             className="px-3 py-1.5 text-primary border border-primary rounded-lg text-label-caps text-xs font-semibold hover:bg-primary/5 transition-all"
           >
             Chi tiết
-          </button>
+          </Link>
         </div>
       </div>
     </div>

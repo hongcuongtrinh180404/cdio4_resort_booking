@@ -4,8 +4,6 @@ import { useEffect, useState } from "react";
 import { get } from "@/lib/api";
 import { ServiceCard } from "@/components/services/ServiceCard";
 import { ComboCard } from "@/components/services/ComboCard";
-import { ServiceDetailModal } from "@/components/services/ServiceDetailModal";
-import { ComboDetailModal } from "@/components/services/ComboDetailModal";
 
 interface ServiceData {
   id: number;
@@ -33,8 +31,6 @@ export default function ServicesPage() {
   const [services, setServices] = useState<ServiceData[]>([]);
   const [combos, setCombos] = useState<ComboData[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedServiceId, setSelectedServiceId] = useState<number | null>(null);
-  const [selectedComboId, setSelectedComboId] = useState<number | null>(null);
 
   useEffect(() => {
     Promise.all([
@@ -105,11 +101,7 @@ export default function ServicesPage() {
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
               {services.map((service) => (
-                <ServiceCard
-                  key={service.id}
-                  service={service}
-                  onDetail={(id) => setSelectedServiceId(id)}
-                />
+                <ServiceCard key={service.id} service={service} />
               ))}
             </div>
           )}
@@ -134,26 +126,12 @@ export default function ServicesPage() {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {combos.map((combo) => (
-                <ComboCard
-                  key={combo.id}
-                  combo={combo}
-                  onDetail={(id) => setSelectedComboId(id)}
-                />
+                <ComboCard key={combo.id} combo={combo} />
               ))}
             </div>
           )}
         </section>
       </main>
-
-      {/* Modals */}
-      <ServiceDetailModal
-        serviceId={selectedServiceId}
-        onClose={() => setSelectedServiceId(null)}
-      />
-      <ComboDetailModal
-        comboId={selectedComboId}
-        onClose={() => setSelectedComboId(null)}
-      />
     </>
   );
 }

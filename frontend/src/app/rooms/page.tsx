@@ -1,17 +1,16 @@
 "use client";
 
-import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { format } from "date-fns";
 import { vi } from "date-fns/locale";
 import { CalendarIcon, Search, Minus, Plus } from "lucide-react";
-import { get } from "@/lib/api";
+import { get, post, del } from "@/lib/api";
 import { formatVND, cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { RoomCard } from "@/components/rooms/RoomCard";
-import { RoomDetailModal } from "@/components/rooms/RoomDetailModal";
 import { Pagination } from "@/components/rooms/Pagination";
 
 const ROOMS_PER_PAGE = 6;
@@ -46,8 +45,13 @@ interface RoomType {
   id: number;
   name: string;
 }
+interface WishlistItem {
+  id: number;
+  roomId: number;
+}
 
 function RoomsContent() {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const [allRooms, setAllRooms] = useState<Room[]>([]);
   const [roomTypes, setRoomTypes] = useState<RoomType[]>([]);
@@ -65,7 +69,7 @@ function RoomsContent() {
     return t;
   }, [today]);
 
-  // Filters
+  // Filters — initialized from URL
   const [checkIn, setCheckIn] = useState<Date>(() => {
     const v = searchParams.get("checkIn");
     if (!v) return today;
@@ -86,14 +90,43 @@ function RoomsContent() {
     const v = searchParams.get("children");
     return v ? Math.max(0, Math.min(MAX_CHILDREN, Number(v))) : 0;
   });
-  const [priceRange, setPriceRange] = useState<[number, number]>([0, 15000000]);
-  const [selectedTypeIds, setSelectedTypeIds] = useState<number[]>([]);
-  const [selectedAmenityIds, setSelectedAmenityIds] = useState<number[]>([]);
-  const [sortBy, setSortBy] = useState<"price_asc" | "price_desc" | "">("");
+  const [priceRange, setPriceRange] = useState<[number, number]>(() => {
+    const min = searchParams.get("priceMin");
+    const max = searchParams.get("priceMax");
+    return [min ? Number(min) : 0, max ? Number(max) : 15000000];
+  });
+  const [selectedTypeIds, setSelectedTypeIds] = useState<number[]>(() => {
+    const v = searchParams.get("type");
+    return v ? v.split(",").map(Number).filter((n) => !isNaN(n)) : [];
+  });
+  const [selectedAmenityIds, setSelectedAmenityIds] = useState<number[]>(() => {
+    const v = searchParams.get("amenity");
+    return v ? v.split(",").map(Number).filter((n) => !isNaN(n)) : [];
+  });
+  const [sortBy, setSortBy] = useState<"price_asc" | "price_desc" | "">(() => {
+    const v = searchParams.get("sort");
+    return v === "price_asc" || v === "price_desc" ? v : "";
+  });
 
   // UI
-  const [currentPage, setCurrentPage] = useState(1);
-  const [modalRoomId, setModalRoomId] = useState<number | null>(null);
+  const [currentPage, setCurrentPage] = useState(() => {
+    const v = searchParams.get("page");
+    return v ? Math.max(1, Number(v)) : 1;
+  });
+  const [wishlistedIds, setWishlistedIds] = useState<Set<number>>(new Set());
+
+  const toggleWishlist = useCallback(async (roomId: number) => {
+    const newSet = new Set(wishlistedIds);
+    if (newSet.has(roomId)) {
+      newSet.delete(roomId);
+      setWishlistedIds(newSet);
+      await del(`/wishlist/${roomId}`).catch(() => {});
+    } else {
+      newSet.add(roomId);
+      setWishlistedIds(newSet);
+      await post(`/wishlist/${roomId}`).catch(() => {});
+    }
+  }, [wishlistedIds]);
 
   const fetchRooms = useCallback(async () => {
     setLoading(true);
@@ -101,7 +134,7 @@ function RoomsContent() {
       const params = new URLSearchParams();
       if (checkIn) params.set("checkIn", format(checkIn, "yyyy-MM-dd"));
       if (checkOut) params.set("checkOut", format(checkOut, "yyyy-MM-dd"));
-      params.set("capacity", String(adults));
+      params.set("capacity", String(adults + children));
       if (selectedTypeIds.length === 1) params.set("roomTypeId", String(selectedTypeIds[0]));
       if (selectedAmenityIds.length > 0) params.set("amenityIds", selectedAmenityIds.join(","));
 
@@ -120,13 +153,12 @@ function RoomsContent() {
       if (sortBy === "price_desc") filtered.sort((a, b) => b.pricePerNight - a.pricePerNight);
 
       setAllRooms(filtered);
-      setCurrentPage(1);
     } catch {
       setAllRooms([]);
     } finally {
       setLoading(false);
     }
-  }, [checkIn, checkOut, adults, selectedTypeIds, selectedAmenityIds, priceRange, sortBy]);
+  }, [checkIn, checkOut, adults, children, selectedTypeIds, selectedAmenityIds, priceRange, sortBy]);
 
   useEffect(() => {
     fetchRooms();
@@ -135,7 +167,41 @@ function RoomsContent() {
   useEffect(() => {
     get<RoomType[]>("/room-types").then(setRoomTypes).catch(() => {});
     get<Amenity[]>("/rooms/amenities").then(setAmenities).catch(() => {});
+    get<WishlistItem[]>("/wishlist").then((items) => {
+      setWishlistedIds(new Set(items.map((i) => i.roomId)));
+    }).catch(() => {});
   }, []);
+
+  // Reset to page 1 when filters change
+  const prevFilterKey = useRef("");
+  useEffect(() => {
+    const key = JSON.stringify({ checkIn, checkOut, adults, children, selectedTypeIds, selectedAmenityIds, priceRange, sortBy });
+    if (prevFilterKey.current && prevFilterKey.current !== key) {
+      setCurrentPage(1);
+    }
+    prevFilterKey.current = key;
+  }, [checkIn, checkOut, adults, children, selectedTypeIds, selectedAmenityIds, priceRange, sortBy]);
+
+  // Sync all filter state to URL (debounced)
+  useEffect(() => {
+    const p = new URLSearchParams();
+    if (checkIn) p.set("checkIn", format(checkIn, "yyyy-MM-dd"));
+    if (checkOut) p.set("checkOut", format(checkOut, "yyyy-MM-dd"));
+    if (adults !== 2) p.set("adults", String(adults));
+    if (children > 0) p.set("children", String(children));
+    if (currentPage > 1) p.set("page", String(currentPage));
+    if (selectedTypeIds.length > 0) p.set("type", selectedTypeIds.join(","));
+    if (selectedAmenityIds.length > 0) p.set("amenity", selectedAmenityIds.join(","));
+    if (priceRange[0] > 0) p.set("priceMin", String(priceRange[0]));
+    if (priceRange[1] < 15000000) p.set("priceMax", String(priceRange[1]));
+    if (sortBy) p.set("sort", sortBy);
+
+    const qs = p.toString();
+    const tid = setTimeout(() => {
+      router.replace(qs ? `/rooms?${qs}` : "/rooms", { scroll: false });
+    }, 400);
+    return () => clearTimeout(tid);
+  }, [checkIn, checkOut, adults, children, currentPage, selectedTypeIds, selectedAmenityIds, priceRange, sortBy, router]);
 
   const toggleType = (id: number) => {
     setSelectedTypeIds((prev) =>
@@ -424,7 +490,8 @@ function RoomsContent() {
                   <RoomCard
                     key={room.id}
                     room={room}
-                    onDetail={(id) => setModalRoomId(id)}
+                    isWishlisted={wishlistedIds.has(room.id)}
+                    onToggleWishlist={toggleWishlist}
                     checkIn={format(checkIn, "yyyy-MM-dd")}
                     checkOut={format(checkOut, "yyyy-MM-dd")}
                     adults={adults}
@@ -442,14 +509,6 @@ function RoomsContent() {
         </section>
       </main>
 
-      <RoomDetailModal
-        roomId={modalRoomId}
-        onClose={() => setModalRoomId(null)}
-        checkIn={format(checkIn, "yyyy-MM-dd")}
-        checkOut={format(checkOut, "yyyy-MM-dd")}
-        adults={adults}
-        children={children}
-      />
     </>
   );
 }

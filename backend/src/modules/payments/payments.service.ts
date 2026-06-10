@@ -1,14 +1,19 @@
 import { Injectable, BadRequestException, NotFoundException } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { PrismaService } from "../../database/prisma/prisma.service";
+import { Resend } from "resend";
 import * as crypto from "crypto";
 
 @Injectable()
 export class PaymentsService {
+  private resend: Resend;
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly configService: ConfigService,
-  ) {}
+  ) {
+    this.resend = new Resend(this.configService.get<string>("RESEND_API_KEY") ?? "");
+  }
 
   async mockPayment(bookingId: number, userId: number) {
     const booking = await this.prisma.booking.findUnique({ where: { id: bookingId } });
@@ -34,7 +39,54 @@ export class PaymentsService {
       }),
     ]);
 
+    this.sendConfirmationEmail(bookingId).catch((err) =>
+      console.error("[EMAIL ERROR]", err),
+    );
+
     return { message: "Payment successful", bookingId };
+  }
+
+  private async sendConfirmationEmail(bookingId: number) {
+    const details = await this.prisma.booking.findUnique({
+      where: { id: bookingId },
+      include: {
+        user: { select: { email: true, fullName: true } },
+        room: true,
+        services: { include: { service: true } },
+        combos: { include: { combo: true } },
+      },
+    });
+    if (!details?.user.email) return;
+
+    const fmt = (d: Date) =>
+      d.toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit", year: "numeric" });
+
+    const serviceList = [
+      ...details.services.map((s) => `${s.service.name} x${s.quantity}`),
+      ...details.combos.map((c) => `${c.combo.name} x${c.quantity}`),
+    ].join(", ");
+
+    const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&color=0f172a&data=https%3A%2F%2Fdtuvivu.vn%2Fcheckin%3Fid%3D${details.bookingCode}`;
+
+    await this.resend.emails.send({
+      from: "onboarding@resend.dev",
+      to: details.user.email,
+      subject: "DTUVIVU - Xác nhận đặt phòng thành công",
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 480px; margin: 0 auto;">
+          <h2 style="color:#1594D8;">DTUVIVU</h2>
+          <p><strong>Phòng:</strong> ${details.room.name}</p>
+          <p><strong>Mã đặt phòng:</strong> ${details.bookingCode}</p>
+          <p><strong>Nhận phòng:</strong> ${fmt(details.checkInDate)}</p>
+          <p><strong>Trả phòng:</strong> ${fmt(details.checkOutDate)}</p>
+          ${serviceList ? `<p><strong>Dịch vụ:</strong> ${serviceList}</p>` : ""}
+          <br/>
+          <img src="${qrUrl}" alt="QR Check-in" style="width:180px;height:180px;"/>
+          <br/><br/>
+          <p style="color:#6b7280;">Cảm ơn bạn đã chọn DTUVIVU!</p>
+        </div>
+      `,
+    });
   }
 
   async createPaymentUrl(bookingId: number, userId: number) {

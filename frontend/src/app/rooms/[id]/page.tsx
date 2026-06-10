@@ -1,7 +1,7 @@
 "use client";
 
 import { Suspense, useEffect, useState } from "react";
-import { useParams, useSearchParams } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { get } from "@/lib/api";
 import { formatVND } from "@/lib/utils";
 import Link from "next/link";
@@ -37,6 +37,7 @@ interface Room {
 
 function RoomDetailContent() {
   const params = useParams();
+  const router = useRouter();
   const searchParams = useSearchParams();
   const checkInParam = searchParams.get("checkIn") || undefined;
   const checkOutParam = searchParams.get("checkOut") || undefined;
@@ -71,25 +72,25 @@ function RoomDetailContent() {
     return (
       <div className="max-w-max-width mx-auto px-margin-mobile md:px-margin-desktop py-20 text-center">
         <p className="font-body-lg text-body-lg text-on-surface-variant">Không tìm thấy phòng</p>
-        <Link
-          href="/rooms"
+        <button
+          onClick={() => router.back()}
           className="mt-4 inline-block text-primary font-label-caps text-label-caps font-bold"
         >
           &larr; Quay lại danh sách
-        </Link>
+        </button>
       </div>
     );
   }
 
   return (
     <div className="max-w-max-width mx-auto px-margin-mobile md:px-margin-desktop py-8 md:py-12">
-      <Link
-        href="/rooms"
+      <button
+        onClick={() => router.back()}
         className="inline-flex items-center gap-1 text-primary font-label-caps text-label-caps font-bold hover:text-primary/80 transition-colors mb-6"
       >
         <span className="material-symbols-outlined text-sm">arrow_back</span>
         Quay lại danh sách
-      </Link>
+      </button>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12">
         {/* Image gallery */}
