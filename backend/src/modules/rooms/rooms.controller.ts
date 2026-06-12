@@ -1,8 +1,10 @@
-import { Controller, Get, Post, Patch, Param, Body, Query, UseGuards } from "@nestjs/common";
+import { Controller, Get, Post, Patch, Delete, Param, Body, Query, UseGuards } from "@nestjs/common";
 import { ApiTags, ApiOperation } from "@nestjs/swagger";
 import { RoomsService } from "./rooms.service";
 import { CreateRoomDto } from "./dto/create-room.dto";
 import { UpdateRoomDto } from "./dto/update-room.dto";
+import { UpdateRoomStatusDto } from "./dto/update-room-status.dto";
+import { AddRoomImageDto } from "./dto/add-room-image.dto";
 import { QueryRoomDto } from "./dto/query-room.dto";
 import { JwtAuthGuard } from "../../common/guards/jwt-auth.guard";
 import { RolesGuard } from "../../common/guards/roles.guard";
@@ -52,5 +54,29 @@ export class RoomsController {
   @ApiOperation({ summary: "Update a room (EMPLOYEE/ADMIN)" })
   update(@Param("id") id: string, @Body() dto: UpdateRoomDto) {
     return this.roomsService.update(Number(id), dto);
+  }
+
+  @Patch(":id/status")
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.EMPLOYEE, Role.ADMIN)
+  @ApiOperation({ summary: "Update room status (EMPLOYEE/ADMIN)" })
+  updateStatus(@Param("id") id: string, @Body() dto: UpdateRoomStatusDto) {
+    return this.roomsService.updateStatus(Number(id), dto.status);
+  }
+
+  @Post(":id/images")
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.EMPLOYEE, Role.ADMIN)
+  @ApiOperation({ summary: "Add image to room (EMPLOYEE/ADMIN)" })
+  addImage(@Param("id") id: string, @Body() dto: AddRoomImageDto) {
+    return this.roomsService.addImage(Number(id), dto.imageUrl, dto.sortOrder);
+  }
+
+  @Delete("images/:imageId")
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.EMPLOYEE, Role.ADMIN)
+  @ApiOperation({ summary: "Remove image from room (EMPLOYEE/ADMIN)" })
+  removeImage(@Param("imageId") imageId: string) {
+    return this.roomsService.removeImage(Number(imageId));
   }
 }

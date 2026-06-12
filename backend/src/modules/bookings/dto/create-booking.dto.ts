@@ -42,4 +42,8 @@ export class CreateBookingDto {
   @IsOptional()
   @IsString()
   paymentMethod?: "VNPAY" | "VISA";
+
+  @IsOptional()
+  @IsString()
+  specialRequests?: string;
 }

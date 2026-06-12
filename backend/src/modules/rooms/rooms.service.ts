@@ -121,4 +121,45 @@ export class RoomsService {
       include: { roomType: true },
     });
   }
+
+  async updateStatus(id: number, status: "AVAILABLE" | "OCCUPIED" | "MAINTENANCE" | "INACTIVE") {
+    await this.findById(id);
+    return this.prisma.room.update({
+      where: { id },
+      data: { status },
+      include: { roomType: true },
+    });
+  }
+
+  async findAllAdmin() {
+    return this.prisma.room.findMany({
+      include: {
+        roomType: true,
+        images: { orderBy: { sortOrder: "asc" } },
+        amenities: { include: { amenity: true } },
+      },
+      orderBy: { roomNumber: "asc" },
+    });
+  }
+
+  async addImage(id: number, imageUrl: string, sortOrder?: number) {
+    await this.findById(id);
+    const maxSort = await this.prisma.roomImage.aggregate({
+      where: { roomId: id },
+      _max: { sortOrder: true },
+    });
+    return this.prisma.roomImage.create({
+      data: {
+        roomId: id,
+        imageUrl,
+        sortOrder: sortOrder ?? (maxSort._max.sortOrder ?? -1) + 1,
+      },
+    });
+  }
+
+  async removeImage(imageId: number) {
+    const image = await this.prisma.roomImage.findUnique({ where: { id: imageId } });
+    if (!image) throw new NotFoundException("Image not found");
+    return this.prisma.roomImage.delete({ where: { id: imageId } });
+  }
 }

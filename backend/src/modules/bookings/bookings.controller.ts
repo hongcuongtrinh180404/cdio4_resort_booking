@@ -3,6 +3,7 @@ import { ApiTags, ApiOperation } from "@nestjs/swagger";
 import { BookingsService } from "./bookings.service";
 import { CreateBookingDto } from "./dto/create-booking.dto";
 import { QueryBookingDto } from "./dto/query-booking.dto";
+import { UpdateBookingStatusDto } from "./dto/update-booking-status.dto";
 import { JwtAuthGuard } from "../../common/guards/jwt-auth.guard";
 import { RolesGuard } from "../../common/guards/roles.guard";
 import { Roles } from "../../common/decorators/roles.decorator";
@@ -49,5 +50,13 @@ export class BookingsController {
   @ApiOperation({ summary: "Cancel a booking" })
   cancel(@Param("id") id: string, @CurrentUser() user: JwtPayload) {
     return this.bookingsService.cancel(Number(id), user.sub, user.role);
+  }
+
+  @Patch(":id/status")
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.EMPLOYEE, Role.ADMIN)
+  @ApiOperation({ summary: "Update booking status (check-in/out) — EMPLOYEE/ADMIN" })
+  updateStatus(@Param("id") id: string, @Body() dto: UpdateBookingStatusDto) {
+    return this.bookingsService.updateStatus(Number(id), dto.status);
   }
 }

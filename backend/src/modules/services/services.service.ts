@@ -25,4 +25,18 @@ export class ServicesService {
     await this.findById(id);
     return this.prisma.service.update({ where: { id }, data: dto });
   }
+
+  async findAllAdmin(page = 1, limit = 20) {
+    const skip = (page - 1) * limit;
+    const [data, total] = await Promise.all([
+      this.prisma.service.findMany({ skip, take: limit, orderBy: { createdAt: "desc" } }),
+      this.prisma.service.count(),
+    ]);
+    return { data, total, page, limit, totalPages: Math.ceil(total / limit) };
+  }
+
+  async remove(id: number) {
+    await this.findById(id);
+    return this.prisma.service.update({ where: { id }, data: { isActive: false } });
+  }
 }

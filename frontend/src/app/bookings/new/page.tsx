@@ -85,6 +85,7 @@ function NewBookingForm() {
   const [selectedServices, setSelectedServices] = useState<Record<number, number>>({});
   const [selectedCombos, setSelectedCombos] = useState<Record<number, number>>({});
 
+  const [specialRequests, setSpecialRequests] = useState("");
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
@@ -199,6 +200,7 @@ function NewBookingForm() {
         checkOutDate: format(checkOut, "yyyy-MM-dd"),
         services: servicesPayload.length ? servicesPayload : undefined,
         combos: combosPayload.length ? combosPayload : undefined,
+        specialRequests: specialRequests.trim() || undefined,
       });
 
       router.push(`/bookings/${booking.id}`);
@@ -252,6 +254,16 @@ function NewBookingForm() {
                 <div className="space-y-1.5 md:col-span-2">
                   <label className="text-label-caps text-xs text-on-surface-variant uppercase tracking-wider font-semibold">Email</label>
                   <input type="email" defaultValue={profile?.email ?? ""} className="w-full h-10 border border-outline rounded-lg px-3 text-body-sm bg-background text-on-surface focus:ring-2 focus:ring-primary focus:border-primary outline-none" placeholder="Nhập email" />
+                </div>
+                <div className="space-y-1.5 md:col-span-2">
+                  <label className="text-label-caps text-xs text-on-surface-variant uppercase tracking-wider font-semibold">Yêu cầu đặc biệt</label>
+                  <textarea
+                    value={specialRequests}
+                    onChange={(e) => setSpecialRequests(e.target.value)}
+                    rows={3}
+                    className="w-full border border-outline rounded-lg px-3 py-2 text-body-sm bg-background text-on-surface focus:ring-2 focus:ring-primary focus:border-primary outline-none resize-none"
+                    placeholder="VD: Tầng cao, giường đôi, check-in muộn..."
+                  />
                 </div>
               </div>
             </section>

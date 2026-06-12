@@ -2,7 +2,7 @@ import { Injectable, NotFoundException, BadRequestException, ForbiddenException 
 import { PrismaService } from "../../database/prisma/prisma.service";
 import { CreateBookingDto } from "./dto/create-booking.dto";
 import { QueryBookingDto } from "./dto/query-booking.dto";
-import { BookingStatus, PaymentGateway } from "@prisma/client";
+import { BookingStatus, PaymentGateway, RoomStatus } from "@prisma/client";
 
 @Injectable()
 export class BookingsService {
@@ -73,6 +73,7 @@ export class BookingsService {
           comboTotal,
           totalAmount,
           expiresAt,
+          specialRequests: dto.specialRequests,
         },
       });
 
@@ -162,19 +163,60 @@ export class BookingsService {
     });
   }
 
-  findAll(query: QueryBookingDto) {
-    return this.prisma.booking.findMany({
-      where: {
-        ...(query.status && { status: query.status as BookingStatus }),
-        ...(query.userId && { userId: query.userId }),
-      },
-      include: {
-        user: { select: { id: true, email: true, fullName: true } },
-        room: { include: { roomType: true } },
-        payment: true,
-      },
-      orderBy: { createdAt: "desc" },
-    });
+  async findAll(query: QueryBookingDto) {
+    const where: any = {};
+    if (query.status) where.status = query.status as BookingStatus;
+    if (query.userId) where.userId = query.userId;
+
+    if (query.search) {
+      where.OR = [
+        { bookingCode: { contains: query.search } },
+        { user: { fullName: { contains: query.search } } },
+      ];
+    }
+
+    if (query.phone) {
+      where.user = { ...(where.user || {}), phone: { contains: query.phone } };
+    }
+
+    if (query.checkInFrom || query.checkInTo) {
+      where.checkInDate = {
+        ...(query.checkInFrom && { gte: new Date(query.checkInFrom) }),
+        ...(query.checkInTo && { lte: new Date(query.checkInTo) }),
+      };
+    }
+
+    if (query.checkOutFrom || query.checkOutTo) {
+      where.checkOutDate = {
+        ...(query.checkOutFrom && { gte: new Date(query.checkOutFrom) }),
+        ...(query.checkOutTo && { lte: new Date(query.checkOutTo) }),
+      };
+    }
+
+    if (query.roomTypeId) {
+      where.room = { roomTypeId: query.roomTypeId };
+    }
+
+    const page = query.page || 1;
+    const limit = query.limit || 20;
+    const skip = (page - 1) * limit;
+
+    const [data, total] = await Promise.all([
+      this.prisma.booking.findMany({
+        where,
+        skip,
+        take: limit,
+        include: {
+          user: { select: { id: true, email: true, fullName: true, phone: true } },
+          room: { include: { roomType: true } },
+          payment: true,
+        },
+        orderBy: { createdAt: "desc" },
+      }),
+      this.prisma.booking.count({ where }),
+    ]);
+
+    return { data, total, page, limit, totalPages: Math.ceil(total / limit) };
   }
 
   async findById(id: number) {
@@ -233,5 +275,29 @@ export class BookingsService {
       refunded,
       refundAmount: refunded ? Number(booking.totalAmount) : 0,
     };
+  }
+
+  async updateStatus(id: number, status: "CHECKED_IN" | "CHECKED_OUT") {
+    const booking = await this.prisma.booking.findUnique({ where: { id }, include: { payment: true } });
+    if (!booking) throw new NotFoundException("Booking not found");
+
+    if (status === "CHECKED_IN") {
+      if (booking.status !== "CONFIRMED") throw new BadRequestException("Only confirmed bookings can be checked in");
+      if (booking.payment?.status !== "SUCCESS") throw new BadRequestException("Booking must be paid before check-in");
+    }
+
+    if (status === "CHECKED_OUT") {
+      if (booking.status !== "CHECKED_IN") throw new BadRequestException("Booking must be checked in before check-out");
+    }
+
+    return this.prisma.booking.update({
+      where: { id },
+      data: { status },
+      include: {
+        user: { select: { id: true, email: true, fullName: true } },
+        room: true,
+        payment: true,
+      },
+    });
   }
 }

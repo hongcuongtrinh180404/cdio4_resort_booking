@@ -51,4 +51,23 @@ export class ServiceCombosService {
       include: { items: { include: { service: true } } },
     });
   }
+
+  async findAllAdmin(page = 1, limit = 20) {
+    const skip = (page - 1) * limit;
+    const [data, total] = await Promise.all([
+      this.prisma.serviceCombo.findMany({
+        skip,
+        take: limit,
+        include: { items: { include: { service: true } } },
+        orderBy: { createdAt: "desc" },
+      }),
+      this.prisma.serviceCombo.count(),
+    ]);
+    return { data, total, page, limit, totalPages: Math.ceil(total / limit) };
+  }
+
+  async remove(id: number) {
+    await this.findById(id);
+    return this.prisma.serviceCombo.update({ where: { id }, data: { isActive: false } });
+  }
 }

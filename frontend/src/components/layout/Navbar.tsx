@@ -3,7 +3,8 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { isAuthenticated, getUser, removeToken } from "@/lib/auth";
+import { getUser, removeToken } from "@/lib/auth";
+import type { JwtPayload } from "@/lib/auth";
 
 const NAV_LINKS = [
   { href: "/", label: "Trang chủ" },
@@ -15,18 +16,13 @@ const NAV_LINKS = [
 
 export function Navbar() {
   const pathname = usePathname();
-  const user = getUser();
+  const [user, setUser] = useState<JwtPayload | null>(null);
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
 
-  useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 20);
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
-  }, []);
-
   const handleLogout = useCallback(() => {
     removeToken();
+    setUser(null);
     window.location.href = "/";
   }, []);
 
@@ -35,6 +31,16 @@ export function Navbar() {
     if (href.startsWith("#")) return false;
     return pathname.startsWith(href);
   };
+
+  useEffect(() => {
+    setUser(getUser());
+    if (pathname.startsWith("/admin")) return;
+    const onScroll = () => setScrolled(window.scrollY > 20);
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, [pathname]);
+
+  if (pathname.startsWith("/admin")) return null;
 
   return (
     <header
@@ -77,9 +83,9 @@ export function Navbar() {
             Đặt phòng ngay
           </button>
 
-          {isAuthenticated() ? (
+          {user ? (
             <div className="flex items-center gap-3">
-              {user?.role !== "GUEST" && (
+              {user.role !== "GUEST" && (
                 <Link
                   href="/admin/dashboard"
                   className="text-sm text-on-surface-variant hover:text-primary transition-colors"
@@ -140,7 +146,7 @@ export function Navbar() {
               {link.label}
             </Link>
           ))}
-          {!isAuthenticated() && (
+          {!user && (
             <Link
               href="/login"
               onClick={() => setMobileOpen(false)}

@@ -130,6 +130,7 @@ model Booking {
   serviceTotal      Decimal       @db.Decimal(10, 2)
   comboTotal        Decimal       @db.Decimal(10, 2)
   totalAmount       Decimal       @db.Decimal(10, 2)
+  specialRequests   String?       @db.Text
   expiresAt         DateTime
   createdAt         DateTime      @default(now())
   updatedAt         DateTime      @updatedAt
@@ -201,6 +202,7 @@ enum UserRole {
 
 enum RoomStatus {
   AVAILABLE
+  OCCUPIED
   MAINTENANCE
   INACTIVE
 }

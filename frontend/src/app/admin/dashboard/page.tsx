@@ -2,9 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { get } from "@/lib/api";
-import { hasRole } from "@/lib/auth";
-import { useRouter } from "next/navigation";
-import Link from "next/link";
+import { formatVND } from "@/lib/utils";
 
 interface Dashboard {
   totalRooms: number;
@@ -14,34 +12,86 @@ interface Dashboard {
   totalRevenue: number;
 }
 
+const STAT_CARDS = [
+  { key: "totalRooms", label: "Tổng số phòng", icon: "meeting_room", color: "bg-blue-500" },
+  { key: "activeBookings", label: "Đã xác nhận", icon: "check_circle", color: "bg-green-500" },
+  { key: "pendingBookings", label: "Chờ thanh toán", icon: "hourglass_empty", color: "bg-yellow-500" },
+  { key: "totalUsers", label: "Người dùng", icon: "people", color: "bg-purple-500" },
+];
+
+function StatSkeleton() {
+  return (
+    <div className="bg-white rounded-xl border border-outline p-5 animate-pulse">
+      <div className="flex items-center gap-4">
+        <div className="w-12 h-12 rounded-lg bg-gray-200" />
+        <div className="flex-1 space-y-2">
+          <div className="h-4 bg-gray-200 rounded w-20" />
+          <div className="h-6 bg-gray-200 rounded w-14" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function AdminDashboardPage() {
-  const router = useRouter();
   const [data, setData] = useState<Dashboard | null>(null);
 
   useEffect(() => {
-    if (!hasRole("EMPLOYEE", "ADMIN")) { router.push("/"); return; }
     get<Dashboard>("/admin/dashboard").then(setData);
-  }, [router]);
-
-  if (!data) return <div className="p-6">Đang tải...</div>;
+  }, []);
 
   return (
-    <div className="mx-auto max-w-4xl p-6">
-      <h1 className="mb-6 text-2xl font-bold">Admin Dashboard</h1>
-      <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-        <div className="rounded-lg border p-4"><p className="text-2xl font-bold">{data.totalRooms}</p><p className="text-sm text-gray-500">Phòng</p></div>
-        <div className="rounded-lg border p-4"><p className="text-2xl font-bold">{data.activeBookings}</p><p className="text-sm text-gray-500">Đã xác nhận</p></div>
-        <div className="rounded-lg border p-4"><p className="text-2xl font-bold">{data.pendingBookings}</p><p className="text-sm text-gray-500">Chờ thanh toán</p></div>
-        <div className="rounded-lg border p-4"><p className="text-2xl font-bold">{data.totalUsers}</p><p className="text-sm text-gray-500">Người dùng</p></div>
+    <div className="p-6 md:p-8 max-w-6xl">
+      {/* Header */}
+      <div className="mb-8">
+        <h1 className="font-headline-sm text-headline-sm font-bold text-on-surface">Dashboard</h1>
+        <p className="text-body-md text-on-surface-variant mt-1">Tổng quan hoạt động của resort</p>
       </div>
-      <div className="mt-6 rounded-lg border p-4">
-        <p className="text-lg font-semibold">Doanh thu: {new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(data.totalRevenue)}</p>
+
+      {/* Stats Grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        {!data ? (
+          <>
+            <StatSkeleton />
+            <StatSkeleton />
+            <StatSkeleton />
+            <StatSkeleton />
+          </>
+        ) : (
+          STAT_CARDS.map((card) => (
+            <div key={card.key} className="bg-white rounded-xl border border-outline p-5 hover:shadow-md transition-shadow">
+              <div className="flex items-center gap-4">
+                <div className={`w-12 h-12 rounded-lg ${card.color} flex items-center justify-center`}>
+                  <span className="material-symbols-outlined text-white text-2xl">{card.icon}</span>
+                </div>
+                <div>
+                  <p className="text-body-sm text-on-surface-variant">{card.label}</p>
+                  <p className="font-headline-sm text-headline-sm font-bold text-on-surface">
+                    {data[card.key as keyof Dashboard]?.toLocaleString("vi-VN") ?? 0}
+                  </p>
+                </div>
+              </div>
+            </div>
+          ))
+        )}
       </div>
-      <div className="mt-6 flex gap-4">
-        <Link href="/admin/rooms" className="text-blue-600 hover:underline">Quản lý phòng</Link>
-        <Link href="/admin/bookings" className="text-blue-600 hover:underline">Quản lý booking</Link>
-        <Link href="/admin/reports" className="text-blue-600 hover:underline">Báo cáo</Link>
-      </div>
+
+      {/* Revenue Card */}
+      {data && (
+        <div className="bg-white rounded-xl border border-outline p-6 hover:shadow-md transition-shadow">
+          <div className="flex items-center gap-4">
+            <div className="w-14 h-14 rounded-lg bg-primary/10 flex items-center justify-center">
+              <span className="material-symbols-outlined text-primary text-3xl">payments</span>
+            </div>
+            <div>
+              <p className="text-body-sm text-on-surface-variant">Tổng doanh thu</p>
+              <p className="font-headline-md text-headline-md font-bold text-primary">
+                {formatVND(Number(data.totalRevenue))}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

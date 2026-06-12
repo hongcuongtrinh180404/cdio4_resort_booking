@@ -1,4 +1,4 @@
-import { Injectable } from "@nestjs/common";
+import { Injectable, NotFoundException } from "@nestjs/common";
 import { PrismaService } from "../../database/prisma/prisma.service";
 
 @Injectable()
@@ -32,15 +32,77 @@ export class AdminService {
     };
   }
 
-  async getRevenueReport() {
-    return this.prisma.payment.findMany({
-      where: { status: "SUCCESS" },
-      include: {
-        booking: {
-          select: { bookingCode: true, createdAt: true },
+  async getRevenueReport(page = 1, limit = 20) {
+    const skip = (page - 1) * limit;
+    const [data, total] = await Promise.all([
+      this.prisma.payment.findMany({
+        where: { status: "SUCCESS" },
+        skip,
+        take: limit,
+        include: {
+          booking: {
+            select: { bookingCode: true, createdAt: true },
+          },
         },
+        orderBy: { paidAt: "desc" },
+      }),
+      this.prisma.payment.count({ where: { status: "SUCCESS" } }),
+    ]);
+    return { data, total, page, limit, totalPages: Math.ceil(total / limit) };
+  }
+
+  async getAllRooms(page = 1, limit = 20) {
+    const skip = (page - 1) * limit;
+    const [data, total] = await Promise.all([
+      this.prisma.room.findMany({
+        skip,
+        take: limit,
+        include: {
+          roomType: true,
+          images: { orderBy: { sortOrder: "asc" } },
+          amenities: { include: { amenity: true } },
+        },
+        orderBy: { roomNumber: "asc" },
+      }),
+      this.prisma.room.count(),
+    ]);
+    return { data, total, page, limit, totalPages: Math.ceil(total / limit) };
+  }
+
+  async getAllUsers(page = 1, limit = 20) {
+    const skip = (page - 1) * limit;
+    const [data, total] = await Promise.all([
+      this.prisma.user.findMany({
+        skip,
+        take: limit,
+        select: {
+          id: true,
+          email: true,
+          fullName: true,
+          phone: true,
+          role: true,
+          createdAt: true,
+          _count: { select: { bookings: true } },
+        },
+        orderBy: { createdAt: "desc" },
+      }),
+      this.prisma.user.count(),
+    ]);
+    return { data, total, page, limit, totalPages: Math.ceil(total / limit) };
+  }
+
+  async getBookingDetail(id: number) {
+    const booking = await this.prisma.booking.findUnique({
+      where: { id },
+      include: {
+        user: { select: { id: true, email: true, fullName: true, phone: true } },
+        room: { include: { roomType: true, images: true } },
+        services: { include: { service: true } },
+        combos: { include: { combo: true } },
+        payment: true,
       },
-      orderBy: { paidAt: "desc" },
     });
+    if (!booking) throw new NotFoundException("Booking not found");
+    return booking;
   }
 }

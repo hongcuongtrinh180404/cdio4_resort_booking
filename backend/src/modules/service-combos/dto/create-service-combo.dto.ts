@@ -1,4 +1,4 @@
-import { IsString, IsNumber, Min, IsArray, IsInt, IsOptional } from "class-validator";
+import { IsString, IsNumber, Min, IsArray, IsInt, IsOptional, IsBoolean } from "class-validator";
 
 export class CreateServiceComboDto {
   @IsString()
@@ -19,4 +19,8 @@ export class CreateServiceComboDto {
   @IsArray()
   @IsInt({ each: true })
   serviceIds: number[];
+
+  @IsOptional()
+  @IsBoolean()
+  isActive?: boolean;
 }

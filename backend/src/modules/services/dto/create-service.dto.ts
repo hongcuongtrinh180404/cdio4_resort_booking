@@ -1,4 +1,4 @@
-import { IsString, IsNumber, Min, IsOptional, IsArray } from "class-validator";
+import { IsString, IsNumber, Min, IsOptional, IsArray, IsBoolean } from "class-validator";
 
 export class CreateServiceDto {
   @IsString()
@@ -15,4 +15,8 @@ export class CreateServiceDto {
   @IsOptional()
   @IsArray()
   imageUrls?: string[];
+
+  @IsOptional()
+  @IsBoolean()
+  isActive?: boolean;
 }
