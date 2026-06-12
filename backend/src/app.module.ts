@@ -11,6 +11,8 @@ import { BookingsModule } from "./modules/bookings/bookings.module";
 import { PaymentsModule } from "./modules/payments/payments.module";
 import { WishlistModule } from "./modules/wishlist/wishlist.module";
 import { AdminModule } from "./modules/admin/admin.module";
+import { ChatModule } from "./modules/chat/chat.module";
+import { AdminChatModule } from "./modules/admin-chat/admin-chat.module";
 
 @Module({
   imports: [
@@ -26,6 +28,8 @@ import { AdminModule } from "./modules/admin/admin.module";
     PaymentsModule,
     WishlistModule,
     AdminModule,
+    ChatModule,
+    AdminChatModule,
   ],
 })
 export class AppModule {}

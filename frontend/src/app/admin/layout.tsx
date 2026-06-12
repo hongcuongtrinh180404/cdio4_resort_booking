@@ -13,7 +13,7 @@ const SIDEBAR_LINKS = [
   { href: "/admin/services", label: "Dịch vụ", icon: "spa" },
   { href: "/admin/service-combos", label: "Combo", icon: "diamond" },
   { href: "/admin/reports", label: "Báo cáo doanh thu", icon: "finance" },
-  { href: "/admin/users", label: "Khách hàng", icon: "people" },
+  { href: "/admin/users", label: "Quản lý người dùng", icon: "people" },
 ];
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -71,11 +71,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 <Link
                   key={link.href}
                   href={link.href}
-                  className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all text-body-sm ${
-                    active
+                  className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all text-body-sm ${active
                       ? "bg-primary/10 text-primary font-semibold"
                       : "text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface"
-                  }`}
+                    }`}
                   title={!sidebarOpen ? link.label : undefined}
                 >
                   <span className="material-symbols-outlined text-lg shrink-0">{link.icon}</span>

@@ -22,6 +22,8 @@ model User {
 
   bookings Booking[]
   wishlist Wishlist[]
+  chatConversations ChatConversation[]
+  chatMessages ChatMessage[]
 }
 
 model RoomType {
@@ -144,6 +146,32 @@ model Booking {
   @@index([status])
 }
 
+model ChatConversation {
+  id        Int           @id @default(autoincrement())
+  userId    Int
+  user      User          @relation(fields: [userId], references: [id])
+  status    ChatStatus    @default(ACTIVE)
+  hasUnread Boolean       @default(false)
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+  messages  ChatMessage[]
+
+  @@index([userId])
+}
+
+model ChatMessage {
+  id              Int              @id @default(autoincrement())
+  conversationId  Int
+  conversation    ChatConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  role            String           @default("user")
+  content         String           @db.Text
+  staffId         Int?
+  staff           User?            @relation(fields: [staffId], references: [id])
+  createdAt       DateTime         @default(now())
+
+  @@index([conversationId])
+}
+
 model BookingService {
   id            Int     @id @default(autoincrement())
   bookingId     Int
@@ -219,6 +247,12 @@ enum PaymentStatus {
   PENDING
   SUCCESS
   FAILED
+}
+
+enum ChatStatus {
+  ACTIVE
+  RESOLVED
+  CLOSED
 }
 
 enum PaymentGateway {

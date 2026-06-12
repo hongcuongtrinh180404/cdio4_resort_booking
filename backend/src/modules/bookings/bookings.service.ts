@@ -8,7 +8,7 @@ import { BookingStatus, PaymentGateway, RoomStatus } from "@prisma/client";
 export class BookingsService {
   constructor(private readonly prisma: PrismaService) { }
 
-  async create(dto: CreateBookingDto, userId: number) {
+  async create(dto: CreateBookingDto, userId: number, expiresInMinutes = 2) {
     const { roomId, checkInDate, checkOutDate, services, combos, paymentMethod } = dto;
 
     const checkIn = new Date(checkInDate);
@@ -58,7 +58,7 @@ export class BookingsService {
 
       const totalAmount = numberOfNights * Number(room.pricePerNight) + serviceTotal + comboTotal;
       const bookingCode = `BK${Date.now()}`;
-      const expiresAt = new Date(Date.now() + 2 * 60 * 1000);
+      const expiresAt = new Date(Date.now() + expiresInMinutes * 60 * 1000);
 
       const booking = await tx.booking.create({
         data: {
