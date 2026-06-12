@@ -4,7 +4,7 @@ import { useEffect, useState, useRef } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { format } from "date-fns";
 import { vi } from "date-fns/locale";
-import { get, post } from "@/lib/api";
+import { get, post, patch } from "@/lib/api";
 import { formatVND } from "@/lib/utils";
 import { isAuthenticated } from "@/lib/auth";
 
@@ -54,6 +54,7 @@ export default function BookingDetailPage() {
   const [booking, setBooking] = useState<Booking | null>(null);
   const [loading, setLoading] = useState(true);
   const [paying, setPaying] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
   const [copied, setCopied] = useState(false);
   const confettiRan = useRef(false);
   const justPaid = searchParams.get("payment") === "success";
@@ -98,6 +99,25 @@ export default function BookingDetailPage() {
       alert("Thanh toán thất bại");
     } finally {
       setPaying(false);
+    }
+  };
+
+  const handleCancel = async () => {
+    if (!confirm("Bạn có chắc chắn muốn hủy đặt phòng này?")) return;
+    setCancelling(true);
+    try {
+      const res = await patch<{ message: string; refunded: boolean; refundAmount: number }>(`/bookings/${params.id}/cancel`);
+      if (res.refunded) {
+        alert(`Hủy thành công! Tiền sẽ được hoàn: ${formatVND(res.refundAmount)}`);
+      } else {
+        alert("Hủy thành công!");
+      }
+      const updated = await get<Booking>(`/bookings/${params.id}`);
+      setBooking(updated);
+    } catch (err: any) {
+      alert(`Hủy thất bại: ${err?.body?.message ?? err.message}`);
+    } finally {
+      setCancelling(false);
     }
   };
 
@@ -392,6 +412,12 @@ export default function BookingDetailPage() {
                 <button onClick={handlePay} disabled={paying} className="inline-flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 text-white px-8 py-3.5 rounded-lg font-bold text-body-md transition-all active:scale-95 shadow-sm disabled:opacity-50">
                   <span className="material-symbols-outlined">payment</span>
                   {paying ? "Đang xử lý..." : "Thanh toán ngay"}
+                </button>
+              )}
+              {(booking.status === "PENDING" || (booking.status === "CONFIRMED" && (Date.now() - new Date(booking.createdAt).getTime()) / (1000 * 60 * 60) <= 24)) && (
+                <button onClick={handleCancel} disabled={cancelling} className="inline-flex items-center justify-center gap-2 bg-red-600 hover:bg-red-700 text-white px-8 py-3.5 rounded-lg font-bold text-body-md transition-all active:scale-95 shadow-sm disabled:opacity-50">
+                  <span className="material-symbols-outlined">cancel</span>
+                  {cancelling ? "Đang xử lý..." : "Hủy đặt phòng"}
                 </button>
               )}
               <a

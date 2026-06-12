@@ -194,17 +194,44 @@ export class BookingsService {
   }
 
   async cancel(id: number, userId: number, role: string) {
-    const booking = await this.prisma.booking.findUnique({ where: { id } });
+    const booking = await this.prisma.booking.findUnique({
+      where: { id },
+      include: { payment: true },
+    });
     if (!booking) throw new NotFoundException("Booking not found");
     if (role === "GUEST" && booking.userId !== userId) {
       throw new ForbiddenException("You can only cancel your own bookings");
     }
     if (booking.status === "CANCELLED") throw new BadRequestException("Booking already cancelled");
-    if (booking.status === "CHECKED_OUT") throw new BadRequestException("Cannot cancel checked-out booking");
+    if (booking.status === "CHECKED_OUT" || booking.status === "CHECKED_IN") {
+      throw new BadRequestException("Cannot cancel this booking");
+    }
 
-    return this.prisma.booking.update({
+    if (booking.status === "CONFIRMED") {
+      const hoursSinceCreation = (Date.now() - new Date(booking.createdAt).getTime()) / (1000 * 60 * 60);
+      if (hoursSinceCreation > 24) {
+        throw new BadRequestException("Cannot cancel booking after 24 hours from creation");
+      }
+    }
+
+    const refunded = booking.payment?.status === "SUCCESS";
+
+    if (refunded) {
+      await this.prisma.payment.update({
+        where: { bookingId: id },
+        data: { vnpayResponseCode: "MOCK_REFUND" },
+      });
+    }
+
+    await this.prisma.booking.update({
       where: { id },
       data: { status: "CANCELLED" },
     });
+
+    return {
+      message: "Booking cancelled successfully",
+      refunded,
+      refundAmount: refunded ? Number(booking.totalAmount) : 0,
+    };
   }
 }

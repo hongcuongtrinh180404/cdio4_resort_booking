@@ -78,6 +78,7 @@ export default function ProfilePage() {
   const [wishlist, setWishlist] = useState<WishlistItem[]>([]);
   const [bookings, setBookings] = useState<BookingItem[]>([]);
   const [toast, setToast] = useState<{ msg: string; type: "success" | "error" } | null>(null);
+  const [cancellingId, setCancellingId] = useState<number | null>(null);
 
   // Form states
   const [fullName, setFullName] = useState("");
@@ -130,6 +131,25 @@ export default function ProfilePage() {
       const msg = e?.body?.message?.[0] || e?.body?.message || "Đổi mật khẩu thất bại";
       showToast(msg, "error");
     } finally { setChangingPwd(false); }
+  };
+
+  const handleCancelBooking = async (b: BookingItem, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!confirm(`Bạn có chắc chắn muốn hủy đặt phòng "${b.room.name}"?`)) return;
+    setCancellingId(b.id);
+    try {
+      const res = await patch<{ message: string; refunded: boolean; refundAmount: number }>(`/bookings/${b.id}/cancel`);
+      if (res.refunded) {
+        showToast(`Hủy thành công! Tiền hoàn: ${formatVND(res.refundAmount)}`, "success");
+      } else {
+        showToast("Hủy thành công!", "success");
+      }
+      fetchBookings();
+    } catch (err: any) {
+      showToast(err?.body?.message ?? "Hủy thất bại", "error");
+    } finally {
+      setCancellingId(null);
+    }
   };
 
   const removeWishlist = async (roomId: number) => {
@@ -258,25 +278,44 @@ export default function ProfilePage() {
                 <p className="text-body-md text-on-surface-variant">Chưa có booking nào.</p>
               ) : (
                 <div className="space-y-3">
-                  {bookings.map((b) => (
-                    <Link key={b.id} href={`/bookings/${b.id}`} className="block bg-white rounded-lg border border-outline p-4 hover:shadow-md transition-shadow">
-                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-                        <div>
-                          <p className="font-semibold text-on-surface">{b.room.name}</p>
-                          <p className="text-body-sm text-on-surface-variant">{b.bookingCode}</p>
-                          <p className="text-body-sm text-on-surface-variant">
-                            {format(new Date(b.checkInDate), "dd/MM/yyyy", { locale: vi })} → {format(new Date(b.checkOutDate), "dd/MM/yyyy", { locale: vi })}
-                          </p>
+                  {bookings.map((b) => {
+                    const hoursSinceCreation = (Date.now() - new Date(b.createdAt).getTime()) / (1000 * 60 * 60);
+                    const canCancel = b.status === "PENDING" || (b.status === "CONFIRMED" && hoursSinceCreation <= 24);
+                    return (
+                      <div key={b.id} className="bg-white rounded-lg border border-outline p-4 hover:shadow-md transition-shadow cursor-pointer">
+                        <div onClick={() => router.push(`/bookings/${b.id}`)} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                          <div>
+                            <p className="font-semibold text-on-surface">{b.room.name}</p>
+                            <p className="text-body-sm text-on-surface-variant">{b.bookingCode}</p>
+                            <p className="text-body-sm text-on-surface-variant">
+                              {format(new Date(b.checkInDate), "dd/MM/yyyy", { locale: vi })} → {format(new Date(b.checkOutDate), "dd/MM/yyyy", { locale: vi })}
+                            </p>
+                          </div>
+                          <div className="flex items-center gap-3 shrink-0">
+                            <span className={`text-label-caps px-3 py-1 rounded-full ${STATUS_COLOR[b.status] || "bg-gray-100 text-gray-800"}`}>
+                              {STATUS_LABEL[b.status] || b.status}
+                            </span>
+                            <span className="font-bold text-body-md text-primary">{formatVND(b.totalAmount)}</span>
+                          </div>
                         </div>
-                        <div className="flex items-center gap-3 shrink-0">
-                          <span className={`text-label-caps px-3 py-1 rounded-full ${STATUS_COLOR[b.status] || "bg-gray-100 text-gray-800"}`}>
-                            {STATUS_LABEL[b.status] || b.status}
-                          </span>
-                          <span className="font-bold text-body-md text-primary">{formatVND(b.totalAmount)}</span>
-                        </div>
+                        {canCancel && (
+                          <div className="mt-3 flex justify-end">
+                            <button
+                              onClick={(e) => handleCancelBooking(b, e)}
+                              disabled={cancellingId === b.id}
+                              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg font-semibold text-body-sm transition-all active:scale-95 disabled:opacity-50 shadow-sm"
+                              style={{ backgroundColor: "#FA6781", color: "white" }}
+                              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#E55A6F"}
+                              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "#FA6781"}
+                            >
+                              <span className="material-symbols-outlined text-sm">cancel</span>
+                              {cancellingId === b.id ? "Đang xử lý..." : "Hủy đặt phòng"}
+                            </button>
+                          </div>
+                        )}
                       </div>
-                    </Link>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </div>
