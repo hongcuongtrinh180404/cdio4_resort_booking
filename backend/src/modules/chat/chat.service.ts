@@ -149,6 +149,12 @@ export class ChatService {
         });
       }
 
+      const previousMessages = await this.prisma.chatMessage.findMany({
+        where: { conversationId: conversation.id, role: "user" },
+        orderBy: { createdAt: "desc" },
+        take: 4,
+      });
+
       await this.prisma.chatMessage.create({
         data: {
           conversationId: conversation.id,
@@ -183,6 +189,10 @@ export class ChatService {
             "Khi khách hỏi gợi ý combo/dịch vụ, hãy gọi searchPackages và tư vấn dựa trên nhu cầu. " +
             "Không gửi giá trị 0 hoặc mặc định cho các tham số.",
         },
+        ...previousMessages.reverse().map((m) => ({
+          role: m.role as "user" | "assistant",
+          content: m.content,
+        })),
         { role: "user", content: message },
       ];
 
