@@ -152,7 +152,7 @@ export class ChatService {
       const previousMessages = await this.prisma.chatMessage.findMany({
         where: { conversationId: conversation.id, role: "user" },
         orderBy: { createdAt: "desc" },
-        take: 4,
+        take: 6,
       });
 
       await this.prisma.chatMessage.create({
