@@ -31,13 +31,13 @@ Copy `backend/.env.example` thành `backend/.env` và điền các giá trị:
 ```env
 DATABASE_URL="mysql://root:YOUR_MYSQL_PASSWORD@localhost:3306/dtuvivi"
 GROQ_API_KEY="gsk_..."
-GOOGLE_API_KEY="AIzaSy..."
 RESEND_API_KEY="re_..."
+
+Tạo 3 groq API key cho mạnh
 ```
 
 **Hướng dẫn lấy API Keys:**
-- **Groq API Key**: Truy cập [Groq Console](https://console.groq.com) -> Chọn **API Keys** -> click **Create API Key**.
-- **Google AI Studio Key**: Truy cập [Google AI Studio](https://aistudio.google.com) -> click **Get API key** -> click **Create API key**.
+- **Groq API Key**: Truy cập [Groq Console](https://console.groq.com) -> Chọn **API Keys** -> click 
 - **Resend API Key**: Truy cập [Resend](https://resend.com) (miễn phí) -> Đăng ký/đăng nhập -> Chọn **API Keys** -> click **Create API Key** (key có dạng `re_...`).
 
 Nếu để trống `JWT_SECRET`, code sẽ tự dùng `"secret"` — vẫn chạy được nhưng kém bảo mật.
