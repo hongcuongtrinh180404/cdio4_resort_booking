@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { Icon } from "@iconify/react";
 
 const JOURNEY_STEPS = [
   {
@@ -113,9 +114,7 @@ export function JourneySection() {
             <div key={item.step} className="flex flex-col md:flex-row items-center gap-3">
               <StepCard item={item} index={i} visible={visible} />
               {i < JOURNEY_STEPS.length - 1 && (
-                <span className="material-symbols-outlined text-primary/40 text-2xl rotate-90 md:rotate-0">
-                  arrow_forward
-                </span>
+                <Icon icon="material-symbols:arrow-forward" className="text-primary/40 text-2xl rotate-90 md:rotate-0" />
               )}
             </div>
           ))}

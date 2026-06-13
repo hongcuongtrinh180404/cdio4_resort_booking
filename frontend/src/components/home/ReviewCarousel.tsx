@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { Icon } from "@iconify/react";
 
 const reviews = [
   {
@@ -88,13 +89,7 @@ export function ReviewCarousel() {
           <div className="w-full flex-shrink-0 text-center space-y-6">
             <div className="flex justify-center text-secondary">
               {Array.from({ length: review.stars }).map((_, i) => (
-                <span
-                  key={i}
-                  className="material-symbols-outlined"
-                  style={{ fontVariationSettings: "'FILL' 1" }}
-                >
-                  star
-                </span>
+                <Icon key={i} icon="material-symbols:star" />
               ))}
             </div>
             <p className="font-body-lg text-body-lg text-on-surface italic leading-relaxed">
@@ -120,13 +115,13 @@ export function ReviewCarousel() {
           className="absolute left-[-20px] md:left-[-60px] top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-surface border border-outline flex items-center justify-center shadow-lg hover:text-primary transition-colors hover:border-primary active:scale-95 z-10"
           onClick={prev}
         >
-          <span className="material-symbols-outlined">chevron_left</span>
+          <Icon icon="material-symbols:chevron-left" />
         </button>
         <button
           className="absolute right-[-20px] md:right-[-60px] top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-surface border border-outline flex items-center justify-center shadow-lg hover:text-primary transition-colors hover:border-primary active:scale-95 z-10"
           onClick={next}
         >
-          <span className="material-symbols-outlined">chevron_right</span>
+          <Icon icon="material-symbols:chevron-right" />
         </button>
       </div>
     </section>

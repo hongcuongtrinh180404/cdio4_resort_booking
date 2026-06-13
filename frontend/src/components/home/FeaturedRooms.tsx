@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { RoomModal } from "./RoomModal";
+import { Icon } from "@iconify/react";
 
 const rooms = [
   {
@@ -63,7 +64,7 @@ export function FeaturedRooms() {
           className="text-primary font-label-caps text-label-caps font-bold flex items-center gap-1 hover:text-primary/80 transition-colors"
         >
           Xem tất cả phòng
-          <span className="material-symbols-outlined text-sm font-bold">arrow_forward</span>
+          <Icon icon="material-symbols:arrow-forward" className="text-sm font-bold" />
         </Link>
       </div>
 
@@ -93,12 +94,7 @@ export function FeaturedRooms() {
                     {room.title}
                   </h3>
                   <div className="flex items-center gap-1">
-                    <span
-                      className="material-symbols-outlined text-sm text-secondary"
-                      style={{ fontVariationSettings: "'FILL' 1" }}
-                    >
-                      star
-                    </span>
+                    <Icon icon="material-symbols:star" className="text-sm text-secondary" />
                     <span className="font-body-sm font-semibold text-on-surface">
                       {room.rating}
                     </span>

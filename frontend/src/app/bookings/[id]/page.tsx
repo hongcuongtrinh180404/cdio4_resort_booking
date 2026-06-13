@@ -7,6 +7,7 @@ import { vi } from "date-fns/locale";
 import { get, post, patch } from "@/lib/api";
 import { formatVND } from "@/lib/utils";
 import { isAuthenticated, getUser } from "@/lib/auth";
+import { Icon } from "@iconify/react";
 
 interface Booking {
   id: number;
@@ -184,9 +185,7 @@ export default function BookingDetailPage() {
               className="p-1.5 hover:bg-surface-container rounded-full transition-colors active:scale-95"
               title="Sao chép mã"
             >
-              <span className={`material-symbols-outlined text-xl ${copied ? "text-green-500" : "text-on-surface-variant"}`}>
-                {copied ? "check" : "content_copy"}
-              </span>
+              <Icon icon={copied ? "material-symbols:check" : "material-symbols:content-copy"} className={`text-xl ${copied ? "text-green-500" : "text-on-surface-variant"}`} />
             </button>
           </div>
         </section>
@@ -205,7 +204,7 @@ export default function BookingDetailPage() {
                   src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&color=0f172a&data=https%3A%2F%2Fdtuvivu.vn%2Fcheckin%3Fid%3D${booking.bookingCode}`}
                 />
                 <div className="absolute -top-2 -right-2 bg-primary text-white p-2 rounded-full shadow-lg flex items-center justify-center">
-                  <span className="material-symbols-outlined text-sm">qr_code_scanner</span>
+                  <Icon icon="material-symbols:qr-code-scanner" className="text-sm" />
                 </div>
               </div>
               <h3 className="font-headline-sm text-headline-sm mb-2 font-bold text-on-surface">Mã QR Check-in</h3>
@@ -218,19 +217,19 @@ export default function BookingDetailPage() {
               <h3 className="font-headline-sm text-headline-sm mb-4 font-bold text-on-surface">Hướng dẫn tiếp theo</h3>
               <ul className="space-y-4">
                 <li className="flex items-start gap-3">
-                  <span className="material-symbols-outlined text-primary mt-0.5">mail</span>
+                  <Icon icon="material-symbols:mail" className="text-primary mt-0.5" />
                   <span className="text-body-sm text-on-surface-variant">
                     Email xác nhận đã gửi đến <strong>{user.email}</strong>. Quý khách vui lòng kiểm tra hộp thư đến (hoặc thư rác).
                   </span>
                 </li>
                 <li className="flex items-start gap-3">
-                  <span className="material-symbols-outlined text-primary mt-0.5">schedule</span>
+                  <Icon icon="material-symbols:schedule" className="text-primary mt-0.5" />
                   <span className="text-body-sm text-on-surface-variant">
                     Thời gian nhận phòng (Check-in) là từ <strong>14:00 ngày {format(checkIn, "dd/MM/yyyy", { locale: vi })}</strong>.
                   </span>
                 </li>
                 <li className="flex items-start gap-3">
-                  <span className="material-symbols-outlined text-primary mt-0.5">badge</span>
+                  <Icon icon="material-symbols:badge" className="text-primary mt-0.5" />
                   <span className="text-body-sm text-on-surface-variant">
                     Khi đến resort, vui lòng mang theo CMND/CCCD hoặc Hộ chiếu gốc để làm thủ tục đối chiếu.
                   </span>
@@ -276,12 +275,12 @@ export default function BookingDetailPage() {
                     </div>
                     {payment ? (
                       <div className="text-body-sm text-green-600 font-semibold flex md:justify-end items-center gap-1 mt-1">
-                        <span className="material-symbols-outlined text-sm">verified</span>
+                        <Icon icon="material-symbols:verified" className="text-sm" />
                         {payment.status === "SUCCESS" ? "Đã thanh toán" : payment.status}
                       </div>
                     ) : (
                       <div className="text-body-sm text-yellow-600 font-semibold flex md:justify-end items-center gap-1 mt-1">
-                        <span className="material-symbols-outlined text-sm">hourglass_empty</span>
+                        <Icon icon="material-symbols:hourglass-empty" className="text-sm" />
                         Chưa thanh toán
                       </div>
                     )}
@@ -342,7 +341,7 @@ export default function BookingDetailPage() {
                           <tr key={cmb.combo.name} className="text-body-sm text-on-surface hover:bg-slate-50/50 transition-colors">
                             <td className="p-4">
                               <div className="font-bold text-body-md">
-                                <span className="material-symbols-outlined text-[14px] text-primary align-middle mr-1">diamond</span>
+                                <Icon icon="material-symbols:diamond" className="text-[14px] text-primary align-middle mr-1" />
                                 {cmb.combo.name}
                               </div>
                             </td>
@@ -410,7 +409,7 @@ export default function BookingDetailPage() {
             <div className="mt-8 flex flex-wrap gap-4 justify-center">
               {booking.status === "PENDING" && (
                 <button onClick={handlePay} disabled={paying} className="inline-flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 text-white px-8 py-3.5 rounded-lg font-bold text-body-md transition-all active:scale-95 shadow-sm disabled:opacity-50">
-                  <span className="material-symbols-outlined">payment</span>
+                  <Icon icon="material-symbols:payment" />
                   {paying ? "Đang xử lý..." : "Thanh toán ngay"}
                 </button>
               )}
@@ -422,7 +421,7 @@ export default function BookingDetailPage() {
                 return (isEmployeeOrAdmin ? canCancelStaff : canCancelGuest);
               })() && (
                 <button onClick={handleCancel} disabled={cancelling} className="inline-flex items-center justify-center gap-2 bg-red-600 hover:bg-red-700 text-white px-8 py-3.5 rounded-lg font-bold text-body-md transition-all active:scale-95 shadow-sm disabled:opacity-50">
-                  <span className="material-symbols-outlined">cancel</span>
+                  <Icon icon="material-symbols:cancel" />
                   {cancelling ? "Đang xử lý..." : "Hủy đặt phòng"}
                 </button>
               )}
@@ -430,14 +429,14 @@ export default function BookingDetailPage() {
                 href="/"
                 className="inline-flex items-center justify-center gap-2 bg-primary hover:bg-primary/95 text-white px-8 py-3.5 rounded-lg font-bold text-body-md transition-all active:scale-95 shadow-sm"
               >
-                <span className="material-symbols-outlined">home</span>
+                <Icon icon="material-symbols:home" />
                 Về trang chủ
               </a>
               <button
                 onClick={() => window.print()}
                 className="inline-flex items-center justify-center gap-2 border border-outline bg-white hover:bg-slate-50 text-on-surface px-8 py-3.5 rounded-lg font-bold text-body-md transition-all active:scale-95 shadow-sm"
               >
-                <span className="material-symbols-outlined">print</span>
+                <Icon icon="material-symbols:print" />
                 In hóa đơn / Tải PDF
               </button>
             </div>

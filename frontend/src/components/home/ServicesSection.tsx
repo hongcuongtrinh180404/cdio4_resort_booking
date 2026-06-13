@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Icon } from "@iconify/react";
 
 const services = [
   {
@@ -68,7 +69,7 @@ export function ServicesSection() {
                   className="text-primary font-label-caps text-label-caps font-bold inline-flex items-center gap-1 hover:translate-x-1 transition-transform"
                 >
                   Tìm hiểu thêm{" "}
-                  <span className="material-symbols-outlined text-xs">arrow_forward</span>
+                  <Icon icon="material-symbols:arrow-forward" className="text-xs" />
                 </Link>
               </div>
             </div>
@@ -81,7 +82,7 @@ export function ServicesSection() {
             className="inline-flex items-center gap-2 bg-primary text-on-primary px-6 py-3 rounded-full font-label-caps text-label-caps font-semibold hover:bg-primary/95 transition-all shadow-md active:scale-95"
           >
             Xem tất cả dịch vụ
-            <span className="material-symbols-outlined text-sm">arrow_forward</span>
+            <Icon icon="material-symbols:arrow-forward" className="text-sm" />
           </Link>
         </div>
       </div>

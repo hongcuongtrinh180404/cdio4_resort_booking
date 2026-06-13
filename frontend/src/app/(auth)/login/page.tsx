@@ -5,11 +5,12 @@ import { useRouter } from "next/navigation";
 import { post } from "@/lib/api";
 import { setToken } from "@/lib/auth";
 import Link from "next/link";
+import { Icon } from "@iconify/react";
 
 const QUICK_LOGINS = [
-  { label: "ADMIN", icon: "👑", email: "admin@dtuvivi.com", color: "bg-red-600 hover:bg-red-700" },
-  { label: "STAFF", icon: "💼", email: "employee@dtuvivi.com", color: "bg-purple-600 hover:bg-purple-700" },
-  { label: "CUSTOMER", icon: "🏖️", email: "guest@dtuvivi.com", color: "bg-blue-600 hover:bg-blue-700" },
+  { label: "ADMIN", icon: "material-symbols:crown", email: "admin@dtuvivi.com", color: "bg-red-600 hover:bg-red-700" },
+  { label: "STAFF", icon: "material-symbols:work", email: "employee@dtuvivi.com", color: "bg-purple-600 hover:bg-purple-700" },
+  { label: "CUSTOMER", icon: "material-symbols:beach-access", email: "guest@dtuvivi.com", color: "bg-blue-600 hover:bg-blue-700" },
 ];
 
 export default function LoginPage() {
@@ -55,7 +56,7 @@ export default function LoginPage() {
               onClick={() => setForm({ email: q.email, password: "123456" })}
               className={`flex-1 flex flex-col items-center gap-1.5 ${q.color} text-white rounded-xl py-4 px-3 transition-all active:scale-95 shadow-sm font-semibold text-body-sm`}
             >
-              <span className="text-2xl">{q.icon}</span>
+              <Icon icon={q.icon} className="text-2xl" />
               <span>{q.label}</span>
             </button>
           ))}

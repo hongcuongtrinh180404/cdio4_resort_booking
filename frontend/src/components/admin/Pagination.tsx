@@ -1,5 +1,7 @@
 "use client";
 
+import { Icon } from "@iconify/react";
+
 interface Props {
   page: number;
   totalPages: number;
@@ -41,7 +43,7 @@ export default function Pagination({ page, totalPages, total, limit, onPageChang
           disabled={page <= 1}
           className="h-8 px-2 rounded-lg text-body-xs font-semibold text-on-surface-variant hover:bg-surface-container-low transition-all disabled:opacity-30 disabled:cursor-not-allowed"
         >
-          <span className="material-symbols-outlined text-base">chevron_left</span>
+          <Icon icon="material-symbols:chevron-left" className="text-base" />
         </button>
         {getPageNumbers().map((p, i) =>
           p === "..." ? (
@@ -67,7 +69,7 @@ export default function Pagination({ page, totalPages, total, limit, onPageChang
           disabled={page >= totalPages}
           className="h-8 px-2 rounded-lg text-body-xs font-semibold text-on-surface-variant hover:bg-surface-container-low transition-all disabled:opacity-30 disabled:cursor-not-allowed"
         >
-          <span className="material-symbols-outlined text-base">chevron_right</span>
+          <Icon icon="material-symbols:chevron-right" className="text-base" />
         </button>
       </div>
     </div>

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { io, Socket } from "socket.io-client";
 import { post } from "@/lib/api";
 import { getToken } from "@/lib/auth";
+import { Icon } from "@iconify/react";
 
 interface Message {
   role: "user" | "assistant" | "staff";
@@ -37,7 +38,7 @@ function RoomCard({ room }: { room: any }) {
           <img src={img} alt={room.name} className="w-full h-full object-cover" />
         ) : (
           <div className="w-full h-full flex items-center justify-center text-on-surface-variant/40">
-            <span className="material-symbols-outlined text-2xl">image</span>
+            <Icon icon="material-symbols:image" className="text-2xl" />
           </div>
         )}
       </div>
@@ -48,7 +49,7 @@ function RoomCard({ room }: { room: any }) {
         <p className="text-xs text-on-surface-variant">{room.roomType} · {room.capacity} khách</p>
         <p className="text-sm font-bold text-primary">{formatVND(room.pricePerNight)} / đêm</p>
       </div>
-      <span className="material-symbols-outlined text-on-surface-variant/50 text-lg">chevron_right</span>
+      <Icon icon="material-symbols:chevron-right" className="text-on-surface-variant/50 text-lg" />
     </Link>
   );
 }
@@ -83,7 +84,7 @@ function BookingProposal({ data, onConfirm, confirming }: { data: any; onConfirm
   const total = data.estimatedTotal ? Number(data.estimatedTotal) : 0;
   return (
     <div className="mt-2 p-4 rounded-xl bg-green-50 border border-green-300">
-      <p className="text-sm font-bold text-green-800 mb-2">✓ Phòng còn trống</p>
+      <p className="text-sm font-bold text-green-800 mb-2"><Icon icon="material-symbols:check-small" className="inline-block align-middle" /> Phòng còn trống</p>
       <p className="text-sm font-semibold text-on-surface">{data.roomName}</p>
       <p className="text-xs text-on-surface-variant mt-1">{data.checkInDate} → {data.checkOutDate} ({data.numberOfNights} đêm)</p>
       <p className="text-lg font-bold text-green-700 mt-2">{formatVND(total)}</p>
@@ -198,7 +199,7 @@ export default function ChatWidget() {
           className="fixed bottom-6 right-6 z-50 w-14 h-14 rounded-full bg-primary text-on-primary shadow-lg hover:bg-primary/90 transition-all duration-200 active:scale-95 flex items-center justify-center"
           aria-label="Chat với trợ lý DTUVIVI"
         >
-          <span className="material-symbols-outlined text-2xl">chat</span>
+          <Icon icon="material-symbols:chat" className="text-2xl" />
         </button>
       )}
 
@@ -206,14 +207,14 @@ export default function ChatWidget() {
         <div className="fixed bottom-6 right-6 z-50 w-[750px] max-[782px]:w-[calc(100vw-32px)] max-[782px]:right-4 h-[900px] max-h-[calc(100vh-180px)] glass-card rounded-2xl flex flex-col overflow-hidden shadow-2xl">
           <div className="bg-primary text-on-primary px-5 py-4 flex items-center gap-3 shrink-0">
             <div className="w-9 h-9 rounded-full bg-white/20 flex items-center justify-center">
-              <span className="material-symbols-outlined text-lg">smart_toy</span>
+              <Icon icon="material-symbols:smart-toy" className="text-lg" />
             </div>
             <div className="flex-1 min-w-0">
               <p className="font-semibold text-sm">Trợ lý DTUVIVI</p>
               <p className="text-xs text-white/70">Hỗ trợ đặt phòng 24/7</p>
             </div>
             <button onClick={() => setOpen(false)} className="text-white/70 hover:text-white transition-colors">
-              <span className="material-symbols-outlined text-xl">close</span>
+              <Icon icon="material-symbols:close" className="text-xl" />
             </button>
           </div>
 
@@ -269,7 +270,7 @@ export default function ChatWidget() {
                 disabled={loading || !input.trim()}
                 className="w-10 h-10 rounded-full bg-primary text-on-primary flex items-center justify-center hover:bg-primary/90 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
               >
-                <span className="material-symbols-outlined text-lg">send</span>
+                <Icon icon="material-symbols:send" className="text-lg" />
               </button>
             </div>
           </div>

@@ -1,5 +1,7 @@
 "use client";
 
+import { Icon } from "@iconify/react";
+
 const BRAND_ITEMS = [
   {
     image:
@@ -69,7 +71,7 @@ export function BrandExperience() {
                   {item.label}
                 </p>
                 <div className="flex items-center gap-2 transition-all duration-300 group-hover:translate-y-0 translate-y-4 opacity-0 group-hover:opacity-100">
-                  <span className="material-symbols-outlined text-[#F5C26B] text-lg">arrow_forward</span>
+                  <Icon icon="material-symbols:arrow-forward" className="text-[#F5C26B] text-lg" />
                   <span className="font-body-sm text-body-sm text-surface-bright font-semibold">
                     {item.caption}
                   </span>

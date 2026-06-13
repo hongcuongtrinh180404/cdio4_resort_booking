@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import { get } from "@/lib/api";
 import { formatVND } from "@/lib/utils";
 import Link from "next/link";
+import { Icon } from "@iconify/react";
 
 interface ServiceData {
   id: number;
@@ -58,7 +59,7 @@ function ServiceDetailContent() {
         onClick={() => router.back()}
         className="inline-flex items-center gap-1 text-primary font-label-caps text-label-caps font-bold hover:text-primary/80 transition-colors mb-6"
       >
-        <span className="material-symbols-outlined text-sm">arrow_back</span>
+        <Icon icon="material-symbols:arrow-back" className="text-sm" />
         Quay lại
       </button>
 
@@ -70,7 +71,7 @@ function ServiceDetailContent() {
               <img src={images[selectedImage]} alt={service.name} className="w-full h-full object-cover" />
             ) : (
               <div className="w-full h-full bg-surface-container-high flex items-center justify-center text-on-surface-variant">
-                <span className="material-symbols-outlined text-4xl">spa</span>
+                <Icon icon="material-symbols:spa" className="text-4xl" />
               </div>
             )}
           </div>

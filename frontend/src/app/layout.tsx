@@ -31,6 +31,7 @@ export default function RootLayout({
     <html lang="vi">
       <body
         className={`${inter.variable} ${poppins.variable} bg-background text-on-surface font-body-md antialiased`}
+        suppressHydrationWarning
       >
         <Navbar />
         <main className="pt-[88px]">{children}</main>

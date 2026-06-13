@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from "@nestjs/common";
+import { Injectable, NotFoundException, BadRequestException } from "@nestjs/common";
 import { PrismaService } from "../../database/prisma/prisma.service";
 import { CreateRoomDto } from "./dto/create-room.dto";
 import { UpdateRoomDto } from "./dto/update-room.dto";
@@ -38,6 +38,9 @@ export class RoomsService {
     if (checkIn && checkOut) {
       const checkInDate = new Date(checkIn);
       const checkOutDate = new Date(checkOut);
+      if (isNaN(checkInDate.getTime()) || isNaN(checkOutDate.getTime())) {
+        throw new BadRequestException("Ngày tháng không hợp lệ. Vui lòng cung cấp ngày theo định dạng YYYY-MM-DD.");
+      }
       where.NOT = {
         bookings: {
           some: {

@@ -309,7 +309,13 @@ export class ChatService {
             "Khi khách muốn tìm phòng theo tiện nghi (ví dụ: view biển, hồ bơi...), hãy gọi searchAmenities trước " +
             "để lấy ID tiện nghi, sau đó dùng amenityIds trong searchAvailableRooms. " +
             "Lưu ý: Chỉ gửi các tham số roomTypeId, capacity, minPrice, maxPrice, amenityIds khi khách yêu cầu cụ thể. " +
-            "Không gửi giá trị 0 hoặc mặc định.",
+            "Không gửi giá trị 0 hoặc mặc định. " +
+            "QUAN TRỌNG - QUY TẮC VỀ NGÀY THÁNG: " +
+            "1. KHÔNG BAO GIỜ gọi searchAvailableRooms nếu chưa có ngày tháng cụ thể từ khách. " +
+            "2. Phải hỏi khách ngày check-in và check-out cụ thể (ví dụ: 'Anh/chị muốn nhận phòng ngày nào?') trước khi gọi hàm. " +
+            "3. KHÔNG BAO GIỜ dùng các giá trị như 'ngay', 'hom nay', 'hien tai' hoặc bất kỳ từ tiếng Việt nào làm giá trị cho tham số ngày tháng. " +
+            "4. Tham số checkIn và checkOut PHẢI là ngày tháng cụ thể theo định dạng YYYY-MM-DD (ví dụ: 2026-06-15). " +
+            "5. Nếu khách nói 'đặt ngay' hoặc 'đặt phòng' mà không cung cấp ngày cụ thể, hãy hỏi lại: 'Anh/chị vui lòng cho tôi biết ngày nhận phòng và ngày trả phòng cụ thể ạ?'.",
         },
         { role: "user", content: message },
       ];
@@ -409,6 +415,11 @@ export class ChatService {
           reply: "⚠️ API key Groq không hợp lệ. Vui lòng kiểm tra lại GROQ_API_KEY.",
         };
       }
+      if (error.status === 400 && error.error?.code === "tool_use_failed") {
+        return {
+          reply: "Xin lỗi, tôi cần biết ngày tháng cụ thể để tìm phòng cho bạn. Vui lòng cho tôi biết ngày nhận phòng và ngày trả phòng (ví dụ: nhận phòng 15/06/2026, trả phòng 17/06/2026).",
+        };
+      }
       return {
         reply: "Xin lỗi, hiện tại tôi đang gặp sự cố. Vui lòng thử lại sau.",
       };
@@ -428,6 +439,19 @@ export class ChatService {
   private async executeFunction(name: string, args: any, userId: number) {
     switch (name) {
       case "searchAvailableRooms": {
+        if (!args.checkIn || !args.checkOut) {
+          return {
+            action: "error",
+            data: { message: "Vui lòng cung cấp ngày check-in và check-out cụ thể (định dạng YYYY-MM-DD)." },
+          };
+        }
+        const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+        if (!dateRegex.test(args.checkIn) || !dateRegex.test(args.checkOut)) {
+          return {
+            action: "error",
+            data: { message: "Ngày tháng không hợp lệ. Vui lòng cung cấp ngày cụ thể theo định dạng YYYY-MM-DD (ví dụ: 2026-06-15)." },
+          };
+        }
         const rooms = await this.roomsService.findAll({
           checkIn: args.checkIn,
           checkOut: args.checkOut,
@@ -521,6 +545,11 @@ export class ChatService {
   private async proposeBooking(args: any, userId: number) {
     const room = await this.roomsService.findById(args.roomId);
     if (!room) throw new BadRequestException("Room not found");
+
+    const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+    if (!args.checkInDate || !args.checkOutDate || !dateRegex.test(args.checkInDate) || !dateRegex.test(args.checkOutDate)) {
+      throw new BadRequestException("Ngày tháng không hợp lệ. Vui lòng cung cấp ngày cụ thể theo định dạng YYYY-MM-DD.");
+    }
 
     const checkInDate = new Date(args.checkInDate);
     const checkOutDate = new Date(args.checkOutDate);

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { Icon } from "@iconify/react";
 
 interface RoomData {
   title: string;
@@ -99,7 +100,7 @@ export function RoomModal({ roomKey, onClose }: RoomModalProps) {
           className="absolute top-4 right-4 p-2 bg-surface/85 rounded-full text-on-surface-variant hover:text-on-surface hover:bg-surface-container-low z-10 transition-colors shadow-sm"
           onClick={onClose}
         >
-          <span className="material-symbols-outlined">close</span>
+          <Icon icon="material-symbols:close" />
         </button>
 
         <div className="grid grid-cols-1 md:grid-cols-2">
@@ -141,9 +142,7 @@ export function RoomModal({ roomKey, onClose }: RoomModalProps) {
                         key={item}
                         className="flex items-center gap-2.5 text-on-surface-variant font-body-sm text-body-sm"
                       >
-                        <span className="material-symbols-outlined text-primary text-[18px]">
-                          {icon}
-                        </span>
+                        <Icon icon={`material-symbols:${icon.replace(/_/g, "-")}`} className="text-primary text-[18px]" />
                         {name}
                       </div>
                     );
@@ -161,7 +160,7 @@ export function RoomModal({ roomKey, onClose }: RoomModalProps) {
                   Đặt phòng ngay
                 </button>
                 <button className="px-4 border border-outline hover:border-primary text-on-surface-variant hover:text-primary rounded-lg transition-colors flex items-center justify-center active:scale-95">
-                  <span className="material-symbols-outlined">favorite_border</span>
+                  <Icon icon="material-symbols:favorite-border" />
                 </button>
               </div>
             </div>

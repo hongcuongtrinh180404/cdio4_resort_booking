@@ -8,6 +8,7 @@ import { formatVND } from "@/lib/utils";
 import { format } from "date-fns";
 import { vi } from "date-fns/locale";
 import Link from "next/link";
+import { Icon } from "@iconify/react";
 
 type TabKey = "info" | "password" | "wishlist" | "bookings";
 
@@ -15,7 +16,7 @@ const TABS: { key: TabKey; label: string; icon: string }[] = [
   { key: "info", label: "Thông tin tài khoản", icon: "person" },
   { key: "password", label: "Đổi mật khẩu", icon: "lock" },
   { key: "wishlist", label: "Yêu thích", icon: "favorite" },
-  { key: "bookings", label: "Lịch sử booking", icon: "receipt_long" },
+  { key: "bookings", label: "Lịch sử booking", icon: "receipt-long" },
 ];
 
 const STATUS_LABEL: Record<string, string> = {
@@ -61,10 +62,10 @@ function Toast({ msg, type, onClose }: { msg: string; type: "success" | "error";
   const icon = type === "success" ? "check_circle" : "error";
   return (
     <div className={`fixed top-24 right-6 z-50 flex items-center gap-3 ${bg} text-white px-5 py-3 rounded-xl shadow-lg text-body-sm font-semibold animate-slide-in`}>
-      <span className="material-symbols-outlined text-lg">{icon}</span>
+      <Icon icon={`material-symbols:${icon}`} className="text-lg" />
       {msg}
       <button onClick={onClose} className="ml-2 opacity-70 hover:opacity-100">
-        <span className="material-symbols-outlined text-lg">close</span>
+        <Icon icon="material-symbols:close" className="text-lg" />
       </button>
       <style>{`@keyframes slide-in { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } } .animate-slide-in { animation: slide-in 0.3s ease-out; }`}</style>
     </div>
@@ -181,7 +182,7 @@ export default function ProfilePage() {
                   tab === t.key ? "bg-primary/10 text-primary font-semibold" : "text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface"
                 }`}
               >
-                <span className="material-symbols-outlined text-lg">{t.icon}</span>
+                <Icon icon={`material-symbols:${t.icon}`} className="text-lg" />
                 <span className="hidden md:inline">{t.label}</span>
                 <span className="md:hidden text-sm">{t.label}</span>
               </button>
@@ -260,7 +261,7 @@ export default function ProfilePage() {
                         <p className="text-body-sm text-on-surface-variant">{item.room.roomType.name}</p>
                       </div>
                       <button onClick={() => removeWishlist(item.room.id)} className="flex items-center gap-1 text-sm text-error hover:underline">
-                        <span className="material-symbols-outlined text-base">delete</span>
+                        <Icon icon="material-symbols:delete" className="text-base" />
                         Xoá
                       </button>
                     </div>
@@ -311,7 +312,7 @@ export default function ProfilePage() {
                               onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#E55A6F"}
                               onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "#FA6781"}
                             >
-                              <span className="material-symbols-outlined text-sm">cancel</span>
+                              <Icon icon="material-symbols:cancel" className="text-sm" />
                               {cancellingId === b.id ? "Đang xử lý..." : "Hủy đặt phòng"}
                             </button>
                           </div>

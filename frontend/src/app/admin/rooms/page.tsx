@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import { get, post, patch, del } from "@/lib/api";
 import { formatVND } from "@/lib/utils";
 import Pagination from "@/components/admin/Pagination";
+import { Icon } from "@iconify/react";
 
 interface RoomType {
   id: number;
@@ -57,9 +58,9 @@ function Toast({ msg, type, onClose }: { msg: string; type: "success" | "error";
   useEffect(() => { const t = setTimeout(onClose, 3000); return () => clearTimeout(t); }, [onClose]);
   return (
     <div className={`fixed top-6 right-6 z-50 flex items-center gap-3 ${type === "success" ? "bg-green-600" : "bg-red-600"} text-white px-5 py-3 rounded-xl shadow-lg text-body-sm font-semibold animate-slide-in`}>
-      <span className="material-symbols-outlined text-lg">{type === "success" ? "check_circle" : "error"}</span>
+      <Icon icon={type === "success" ? "material-symbols:check-circle" : "material-symbols:error"} className="text-lg" />
       {msg}
-      <button onClick={onClose} className="ml-2 opacity-70 hover:opacity-100"><span className="material-symbols-outlined text-lg">close</span></button>
+      <button onClick={onClose} className="ml-2 opacity-70 hover:opacity-100"><Icon icon="material-symbols:close" className="text-lg" /></button>
       <style>{`@keyframes slide-in { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } } .animate-slide-in { animation: slide-in 0.3s ease-out; }`}</style>
     </div>
   );
@@ -201,7 +202,7 @@ export default function AdminRoomsPage() {
           <div className="flex items-center justify-between p-6 border-b border-outline">
             <h2 className="font-headline-sm text-headline-sm font-bold text-on-surface">{title}</h2>
             <button onClick={() => setModalOpen(false)} className="p-1 hover:bg-surface-container rounded-full transition-colors">
-              <span className="material-symbols-outlined text-xl">close</span>
+              <Icon icon="material-symbols:close" className="text-xl" />
             </button>
           </div>
 
@@ -251,7 +252,7 @@ export default function AdminRoomsPage() {
                         onClick={() => handleRemoveImage(img.id)}
                         className="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity"
                       >
-                        <span className="material-symbols-outlined text-white text-xl">delete</span>
+                        <Icon icon="material-symbols:delete" className="text-white text-xl" />
                       </button>
                     </div>
                   ))}
@@ -297,7 +298,7 @@ export default function AdminRoomsPage() {
           <p className="text-body-md text-on-surface-variant mt-1">Thêm, sửa thông tin và quản lý trạng thái phòng</p>
         </div>
         <button onClick={openAddModal} className="inline-flex items-center gap-2 bg-primary hover:bg-primary/95 text-white px-5 py-2.5 rounded-lg font-semibold text-body-sm transition-all active:scale-95 shadow-sm">
-          <span className="material-symbols-outlined text-lg">add</span>
+          <Icon icon="material-symbols:add" className="text-lg" />
           Thêm phòng
         </button>
       </div>
@@ -362,7 +363,7 @@ export default function AdminRoomsPage() {
                           onClick={() => openEditModal(r)}
                           className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-body-xs font-semibold bg-primary/10 text-primary hover:bg-primary/20 transition-all active:scale-95"
                         >
-                          <span className="material-symbols-outlined text-sm">edit</span>
+                          <Icon icon="material-symbols:edit" className="text-sm" />
                           Sửa
                         </button>
                       </td>

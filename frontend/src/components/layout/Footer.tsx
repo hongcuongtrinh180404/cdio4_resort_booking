@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Icon } from "@iconify/react";
 
 export function Footer() {
   return (
@@ -19,13 +20,13 @@ export function Footer() {
               href="#"
               className="w-10 h-10 rounded-full border border-outline flex items-center justify-center text-on-surface-variant hover:text-primary hover:border-primary transition-colors"
             >
-              <span className="material-symbols-outlined text-lg">language</span>
+              <Icon icon="material-symbols:language" className="text-lg" />
             </a>
             <a
               href="#"
               className="w-10 h-10 rounded-full border border-outline flex items-center justify-center text-on-surface-variant hover:text-primary hover:border-primary transition-colors"
             >
-              <span className="material-symbols-outlined text-lg">mail</span>
+              <Icon icon="material-symbols:mail" className="text-lg" />
             </a>
           </div>
         </div>
@@ -92,14 +93,14 @@ export function Footer() {
           </h4>
           <ul className="space-y-4 font-body-sm text-body-sm text-on-surface-variant">
             <li className="flex items-center gap-2">
-              <span className="material-symbols-outlined text-primary text-sm">phone</span> 1900 1234
+              <Icon icon="material-symbols:phone" className="text-primary text-sm" /> 1900 1234
             </li>
             <li className="flex items-center gap-2">
-              <span className="material-symbols-outlined text-primary text-sm">mail</span>{" "}
+              <Icon icon="material-symbols:mail" className="text-primary text-sm" />{" "}
               contact@dtuvivu.vn
             </li>
             <li className="flex items-center gap-2">
-              <span className="material-symbols-outlined text-primary text-sm">location_on</span> Nha
+              <Icon icon="material-symbols:location-on" className="text-primary text-sm" /> Nha
               Trang, Khánh Hòa, Việt Nam
             </li>
           </ul>

@@ -5,6 +5,7 @@ import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { get } from "@/lib/api";
 import { formatVND } from "@/lib/utils";
 import Link from "next/link";
+import { Icon } from "@iconify/react";
 
 interface Amenity {
   id: number;
@@ -88,7 +89,7 @@ function RoomDetailContent() {
         onClick={() => router.back()}
         className="inline-flex items-center gap-1 text-primary font-label-caps text-label-caps font-bold hover:text-primary/80 transition-colors mb-6"
       >
-        <span className="material-symbols-outlined text-sm">arrow_back</span>
+        <Icon icon="material-symbols:arrow-back" className="text-sm" />
         Quay lại danh sách
       </button>
 
@@ -104,7 +105,7 @@ function RoomDetailContent() {
               />
             ) : (
               <div className="w-full h-full bg-surface-container-high flex items-center justify-center text-on-surface-variant">
-                <span className="material-symbols-outlined text-4xl">image</span>
+                <Icon icon="material-symbols:image" className="text-4xl" />
               </div>
             )}
           </div>
@@ -159,12 +160,12 @@ function RoomDetailContent() {
 
           <div className="flex items-center gap-4 text-on-surface-variant font-body-sm text-body-sm">
             <span className="flex items-center gap-1.5">
-              <span className="material-symbols-outlined text-lg">groups</span>
+              <Icon icon="material-symbols:groups" className="text-lg" />
               {room.capacity} khách
             </span>
             {room.status === "AVAILABLE" && (
               <span className="flex items-center gap-1.5 text-green-600">
-                <span className="material-symbols-outlined text-lg">check_circle</span>
+                <Icon icon="material-symbols:check-circle" className="text-lg" />
                 Còn phòng
               </span>
             )}
@@ -183,9 +184,7 @@ function RoomDetailContent() {
                     className="flex items-center gap-2.5 bg-surface-container-low px-3 py-2.5 rounded-lg"
                   >
                     {ra.amenity.icon && (
-                      <span className="material-symbols-outlined text-primary text-lg">
-                        {ra.amenity.icon}
-                      </span>
+                      <Icon icon={`material-symbols:${ra.amenity.icon.replace(/_/g, "-")}`} className="text-primary text-lg" />
                     )}
                     <span className="font-body-sm text-body-sm text-on-surface">
                       {ra.amenity.name}

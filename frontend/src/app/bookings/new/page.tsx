@@ -4,7 +4,7 @@ import { Suspense, useEffect, useState, useMemo, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { format } from "date-fns";
 import { vi } from "date-fns/locale";
-import { CalendarIcon, Minus, Plus } from "lucide-react";
+import { Icon } from "@iconify/react";
 import { post, get } from "@/lib/api";
 import { isAuthenticated } from "@/lib/auth";
 import { formatVND } from "@/lib/utils";
@@ -277,7 +277,7 @@ function NewBookingForm() {
                   <Popover>
                     <PopoverTrigger asChild>
                       <Button variant="outline" className="w-full justify-start text-left font-normal h-10 border-outline gap-2">
-                        <CalendarIcon className="h-4 w-4 text-primary" />
+                        <Icon icon="lucide:calendar" className="h-4 w-4 text-primary" />
                         {checkIn ? format(checkIn, "dd/MM/yyyy", { locale: vi }) : "Chọn ngày"}
                       </Button>
                     </PopoverTrigger>
@@ -291,7 +291,7 @@ function NewBookingForm() {
                   <Popover>
                     <PopoverTrigger asChild>
                       <Button variant="outline" className="w-full justify-start text-left font-normal h-10 border-outline gap-2">
-                        <CalendarIcon className="h-4 w-4 text-primary" />
+                        <Icon icon="lucide:calendar" className="h-4 w-4 text-primary" />
                         {checkOut ? format(checkOut, "dd/MM/yyyy", { locale: vi }) : "Chọn ngày"}
                       </Button>
                     </PopoverTrigger>
@@ -305,11 +305,11 @@ function NewBookingForm() {
               <div className="space-y-1.5">
                 <label className="text-label-caps text-xs text-on-surface-variant uppercase tracking-wider font-semibold">Số khách</label>
                 <div className="flex items-center gap-3 border border-outline rounded-lg px-4 py-2 w-fit">
-                  <span className="material-symbols-outlined text-primary text-lg">group</span>
+                  <Icon icon="material-symbols:group" className="text-primary text-lg" />
                   <span className="text-body-sm text-on-surface">{guests} người</span>
                   <div className="flex gap-1">
-                    <button type="button" onClick={() => setGuests(Math.max(1, guests - 1))} disabled={guests <= 1} className="flex h-7 w-7 items-center justify-center rounded-full border border-outline text-on-surface-variant hover:bg-surface-container-high disabled:opacity-30 transition-colors"><Minus className="h-3.5 w-3.5" /></button>
-                    <button type="button" onClick={() => setGuests(Math.min(room?.capacity ?? 10, guests + 1))} disabled={guests >= (room?.capacity ?? 10)} className="flex h-7 w-7 items-center justify-center rounded-full border border-outline text-primary hover:bg-primary/5 disabled:opacity-30 transition-colors"><Plus className="h-3.5 w-3.5" /></button>
+                    <button type="button" onClick={() => setGuests(Math.max(1, guests - 1))} disabled={guests <= 1} className="flex h-7 w-7 items-center justify-center rounded-full border border-outline text-on-surface-variant hover:bg-surface-container-high disabled:opacity-30 transition-colors"><Icon icon="lucide:minus" className="h-3.5 w-3.5" /></button>
+                    <button type="button" onClick={() => setGuests(Math.min(room?.capacity ?? 10, guests + 1))} disabled={guests >= (room?.capacity ?? 10)} className="flex h-7 w-7 items-center justify-center rounded-full border border-outline text-primary hover:bg-primary/5 disabled:opacity-30 transition-colors"><Icon icon="lucide:plus" className="h-3.5 w-3.5" /></button>
                   </div>
                 </div>
               </div>
@@ -362,7 +362,7 @@ function NewBookingForm() {
                             <img src={svc.imageUrls[0]} alt={svc.name} className="w-full h-full object-cover" />
                           ) : (
                             <div className="w-full h-full flex items-center justify-center text-on-surface-variant">
-                              <span className="material-symbols-outlined">spa</span>
+                              <Icon icon="material-symbols:spa" />
                             </div>
                           )}
                         </div>
@@ -375,13 +375,13 @@ function NewBookingForm() {
                             <span className="text-body-sm font-bold text-primary">{formatVND(svc.price)}</span>
                             {qty > 0 ? (
                               <div className="flex items-center gap-1 bg-surface-container-high rounded-md px-1 py-0.5" onClick={(e) => e.stopPropagation()}>
-                                <button type="button" onClick={() => updateServiceQty(svc.id, -1)} className="h-6 w-6 flex items-center justify-center text-on-surface-variant hover:text-on-surface rounded"><Minus className="h-3 w-3" /></button>
+                                <button type="button" onClick={() => updateServiceQty(svc.id, -1)} className="h-6 w-6 flex items-center justify-center text-on-surface-variant hover:text-on-surface rounded"><Icon icon="lucide:minus" className="h-3 w-3" /></button>
                                 <span className="text-body-sm font-semibold w-5 text-center tabular-nums">{qty}</span>
-                                <button type="button" onClick={() => updateServiceQty(svc.id, 1)} className="h-6 w-6 flex items-center justify-center text-primary rounded"><Plus className="h-3 w-3" /></button>
+                                <button type="button" onClick={() => updateServiceQty(svc.id, 1)} className="h-6 w-6 flex items-center justify-center text-primary rounded"><Icon icon="lucide:plus" className="h-3 w-3" /></button>
                               </div>
                             ) : (
                               <button type="button" onClick={(e) => { e.stopPropagation(); updateServiceQty(svc.id, 1); }} className="h-8 w-8 flex items-center justify-center rounded-full border border-primary text-primary hover:bg-primary/5 transition-all">
-                                <span className="material-symbols-outlined text-lg">add_shopping_cart</span>
+                                <Icon icon="material-symbols:add-shopping-cart" className="text-lg" />
                               </button>
                             )}
                           </div>
@@ -417,7 +417,7 @@ function NewBookingForm() {
                               <img src={cmb.imageUrls[0]} alt={cmb.name} className="w-full h-full object-cover" />
                             ) : (
                               <div className="w-full h-full flex items-center justify-center text-on-surface-variant">
-                                <span className="material-symbols-outlined">diamond</span>
+                                <Icon icon="material-symbols:diamond" />
                               </div>
                             )}
                             {savings > 0 && (
@@ -430,7 +430,7 @@ function NewBookingForm() {
                               <div className="mt-1 space-y-0.5">
                                 {cmb.items.map((item) => (
                                   <div key={item.serviceId} className="flex items-center gap-1 text-body-xs text-on-surface-variant">
-                                    <span className="material-symbols-outlined text-[10px] text-primary">check_circle</span>
+                                    <Icon icon="material-symbols:check-circle" className="text-[10px] text-primary" />
                                     {item.service.name}
                                   </div>
                                 ))}
@@ -444,13 +444,13 @@ function NewBookingForm() {
                               <div className="flex justify-end mt-1">
                                 {isSelected ? (
                                   <div className="flex items-center gap-1 bg-surface-container-high rounded-md px-1 py-0.5" onClick={(e) => e.stopPropagation()}>
-                                    <button type="button" onClick={() => { const id = cmb.id; setSelectedCombos((prev) => { const q = (prev[id] ?? 0) - 1; if (q <= 0) { const { [id]: _, ...rest } = prev; return rest; } return { ...prev, [id]: q }; }); }} className="h-6 w-6 flex items-center justify-center text-on-surface-variant hover:text-on-surface rounded"><Minus className="h-3 w-3" /></button>
+                                    <button type="button" onClick={() => { const id = cmb.id; setSelectedCombos((prev) => { const q = (prev[id] ?? 0) - 1; if (q <= 0) { const { [id]: _, ...rest } = prev; return rest; } return { ...prev, [id]: q }; }); }} className="h-6 w-6 flex items-center justify-center text-on-surface-variant hover:text-on-surface rounded"><Icon icon="lucide:minus" className="h-3 w-3" /></button>
                                     <span className="text-body-sm font-semibold w-5 text-center tabular-nums">{selectedCombos[cmb.id]}</span>
-                                    <button type="button" onClick={() => setSelectedCombos((prev) => ({ ...prev, [cmb.id]: (prev[cmb.id] ?? 0) + 1 }))} className="h-6 w-6 flex items-center justify-center text-primary rounded"><Plus className="h-3 w-3" /></button>
+                                    <button type="button" onClick={() => setSelectedCombos((prev) => ({ ...prev, [cmb.id]: (prev[cmb.id] ?? 0) + 1 }))} className="h-6 w-6 flex items-center justify-center text-primary rounded"><Icon icon="lucide:plus" className="h-3 w-3" /></button>
                                   </div>
                                 ) : (
                                   <button type="button" onClick={() => toggleCombo(cmb.id)} className="h-8 w-8 flex items-center justify-center rounded-full border border-primary text-primary hover:bg-primary/5 transition-all">
-                                    <span className="material-symbols-outlined text-lg">add_shopping_cart</span>
+                                    <Icon icon="material-symbols:add-shopping-cart" className="text-lg" />
                                   </button>
                                 )}
                               </div>

@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import { get } from "@/lib/api";
 import { formatVND } from "@/lib/utils";
 import Pagination from "@/components/admin/Pagination";
+import { Icon } from "@iconify/react";
 
 interface Payment {
   id: number;
@@ -49,7 +50,7 @@ export default function AdminReportsPage() {
         <div className="bg-white rounded-xl border border-outline p-6 mb-6">
           <div className="flex items-center gap-4">
             <div className="w-14 h-14 rounded-lg bg-primary/10 flex items-center justify-center">
-              <span className="material-symbols-outlined text-primary text-3xl">payments</span>
+              <Icon icon="material-symbols:payments" className="text-primary text-3xl" />
             </div>
             <div>
               <p className="text-body-sm text-on-surface-variant">Tổng doanh thu</p>

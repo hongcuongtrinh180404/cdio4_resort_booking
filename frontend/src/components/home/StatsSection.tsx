@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { Icon } from "@iconify/react";
 
 interface StatCardProps {
   icon: string;
@@ -61,9 +62,7 @@ function StatCard({ icon, iconColor, target, decimals = 0, suffix = "", label }:
       className="bg-surface p-6 rounded-xl border border-outline text-center hover:shadow-lg hover:-translate-y-1 transition-all duration-300"
     >
       <div className={`${iconColor} mb-2`}>
-        <span className="material-symbols-outlined text-4xl" style={{ fontVariationSettings: "'FILL' 1" }}>
-          {icon}
-        </span>
+        <Icon icon={`material-symbols:${icon.replace(/_/g, "-")}`} className="text-4xl" />
       </div>
       <h3 className="font-headline-lg text-headline-lg text-on-surface font-bold">
         {displayValue}

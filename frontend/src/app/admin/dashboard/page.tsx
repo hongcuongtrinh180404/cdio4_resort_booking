@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { get } from "@/lib/api";
 import { formatVND } from "@/lib/utils";
+import { Icon } from "@iconify/react";
 
 interface Dashboard {
   totalRooms: number;
@@ -13,9 +14,9 @@ interface Dashboard {
 }
 
 const STAT_CARDS = [
-  { key: "totalRooms", label: "Tổng số phòng", icon: "meeting_room", color: "bg-blue-500" },
-  { key: "activeBookings", label: "Đã xác nhận", icon: "check_circle", color: "bg-green-500" },
-  { key: "pendingBookings", label: "Chờ thanh toán", icon: "hourglass_empty", color: "bg-yellow-500" },
+  { key: "totalRooms", label: "Tổng số phòng", icon: "meeting-room", color: "bg-blue-500" },
+  { key: "activeBookings", label: "Đã xác nhận", icon: "check-circle", color: "bg-green-500" },
+  { key: "pendingBookings", label: "Chờ thanh toán", icon: "hourglass-empty", color: "bg-yellow-500" },
   { key: "totalUsers", label: "Người dùng", icon: "people", color: "bg-purple-500" },
 ];
 
@@ -62,7 +63,7 @@ export default function AdminDashboardPage() {
             <div key={card.key} className="bg-white rounded-xl border border-outline p-5 hover:shadow-md transition-shadow">
               <div className="flex items-center gap-4">
                 <div className={`w-12 h-12 rounded-lg ${card.color} flex items-center justify-center`}>
-                  <span className="material-symbols-outlined text-white text-2xl">{card.icon}</span>
+                  <Icon icon={`material-symbols:${card.icon}`} className="text-white text-2xl" />
                 </div>
                 <div>
                   <p className="text-body-sm text-on-surface-variant">{card.label}</p>
@@ -81,7 +82,7 @@ export default function AdminDashboardPage() {
         <div className="bg-white rounded-xl border border-outline p-6 hover:shadow-md transition-shadow">
           <div className="flex items-center gap-4">
             <div className="w-14 h-14 rounded-lg bg-primary/10 flex items-center justify-center">
-              <span className="material-symbols-outlined text-primary text-3xl">payments</span>
+              <Icon icon="material-symbols:payments" className="text-primary text-3xl" />
             </div>
             <div>
               <p className="text-body-sm text-on-surface-variant">Tổng doanh thu</p>

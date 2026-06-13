@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { formatVND } from "@/lib/utils";
 import Link from "next/link";
+import { Icon } from "@iconify/react";
 
 interface RoomAmenity {
   amenity: { id: number; name: string; icon: string | null };
@@ -73,7 +74,7 @@ export function RoomCard({ room, isWishlisted = false, onToggleWishlist, checkIn
           />
         ) : (
           <div className="w-full h-full bg-surface-container-high flex items-center justify-center text-on-surface-variant">
-            <span className="material-symbols-outlined text-3xl">image</span>
+            <Icon icon="material-symbols:image" className="text-3xl" />
           </div>
         )}
         {badge && (
@@ -92,28 +93,23 @@ export function RoomCard({ room, isWishlisted = false, onToggleWishlist, checkIn
           className="absolute top-3 right-3 bg-surface/80 backdrop-blur-sm p-1.5 rounded-full hover:bg-primary hover:text-on-primary transition-colors shadow-sm z-10"
         >
           <div className="relative w-5 h-5 flex items-center justify-center">
-            <span className="material-symbols-outlined text-lg text-gray-400" style={{ fontVariationSettings: "'FILL' 0" }}>
-              favorite
-            </span>
-            <span
-              className="absolute inset-0 flex items-center justify-center material-symbols-outlined text-lg"
+            <Icon icon="material-symbols:favorite-outline" className="text-lg text-gray-400" />
+            <Icon
+              icon="material-symbols:favorite"
+              className="absolute inset-0 flex items-center justify-center text-lg"
               style={{
                 color: "#FF97D0",
-                fontVariationSettings: "'FILL' 1",
                 clipPath: isWishlisted ? "inset(0 0 0 0)" : "inset(100% 0 0 0)",
                 transition: "clip-path 0.4s cubic-bezier(0.4, 0, 0.2, 1)",
               }}
-            >
-              favorite
-            </span>
+            />
             {showBounce && (
-              <span
-                className="absolute inset-0 flex items-center justify-center material-symbols-outlined text-lg heart-pop"
-                style={{ color: "#FF97D0", fontVariationSettings: "'FILL' 1" }}
+              <Icon
+                icon="material-symbols:favorite"
+                className="absolute inset-0 flex items-center justify-center text-lg heart-pop"
+                style={{ color: "#FF97D0" }}
                 onAnimationEnd={() => setShowBounce(false)}
-              >
-                favorite
-              </span>
+              />
             )}
           </div>
         </button>
@@ -132,15 +128,15 @@ export function RoomCard({ room, isWishlisted = false, onToggleWishlist, checkIn
 
           <div className="flex items-center gap-3 mb-4 text-on-surface-variant">
             <span className="flex items-center gap-1 text-body-sm">
-              <span className="material-symbols-outlined text-base">square_foot</span>
+              <Icon icon="material-symbols:square-foot" className="text-base" />
               120 m²
             </span>
             <span className="flex items-center gap-1 text-body-sm">
-              <span className="material-symbols-outlined text-base">bed</span>
+              <Icon icon="material-symbols:bed" className="text-base" />
               King
             </span>
             <span className="flex items-center gap-1 text-body-sm">
-              <span className="material-symbols-outlined text-base">group</span>
+              <Icon icon="material-symbols:group" className="text-base" />
               {room.capacity} khách
             </span>
           </div>
@@ -153,7 +149,7 @@ export function RoomCard({ room, isWishlisted = false, onToggleWishlist, checkIn
                   className="inline-flex items-center gap-1 text-xs text-on-surface-variant bg-surface-container-low px-2 py-0.5 rounded-full"
                 >
                   {ra.amenity.icon && (
-                    <span className="material-symbols-outlined text-[11px]">{ra.amenity.icon}</span>
+                    <Icon icon={`material-symbols:${ra.amenity.icon.replace(/_/g, "-")}`} className="text-[11px]" />
                   )}
                   {ra.amenity.name}
                 </span>

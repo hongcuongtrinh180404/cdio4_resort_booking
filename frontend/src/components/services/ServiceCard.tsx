@@ -2,6 +2,7 @@
 
 import { formatVND } from "@/lib/utils";
 import Link from "next/link";
+import { Icon } from "@iconify/react";
 
 interface ServiceCardProps {
   service: {
@@ -25,7 +26,7 @@ export function ServiceCard({ service }: ServiceCardProps) {
           />
         ) : (
           <div className="w-full h-full bg-surface-container-high flex items-center justify-center text-on-surface-variant">
-            <span className="material-symbols-outlined text-3xl">spa</span>
+            <Icon icon="material-symbols:spa" className="text-3xl" />
           </div>
         )}
       </div>

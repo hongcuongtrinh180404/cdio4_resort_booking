@@ -2,6 +2,7 @@
 
 import { formatVND } from "@/lib/utils";
 import Link from "next/link";
+import { Icon } from "@iconify/react";
 
 interface ComboCardProps {
   combo: {
@@ -26,7 +27,7 @@ export function ComboCard({ combo }: ComboCardProps) {
           />
         ) : (
           <div className="w-full h-full bg-surface-container-high flex items-center justify-center text-on-surface-variant">
-            <span className="material-symbols-outlined text-3xl">diamond</span>
+            <Icon icon="material-symbols:diamond" className="text-3xl" />
           </div>
         )}
         <span className="absolute top-3 left-3 bg-primary/90 text-on-primary px-2.5 py-0.5 rounded-full text-label-caps text-xs font-semibold shadow-sm">
@@ -55,7 +56,7 @@ export function ComboCard({ combo }: ComboCardProps) {
           <div className="space-y-1.5 mb-4">
             {combo.items.map((item) => (
               <div key={item.serviceId} className="flex items-center gap-2 text-body-sm text-on-surface">
-                <span className="material-symbols-outlined text-sm text-primary">check_circle</span>
+                <Icon icon="material-symbols:check-circle" className="text-sm text-primary" />
                 {item.service.name}
               </div>
             ))}

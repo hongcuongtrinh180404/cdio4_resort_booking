@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { get } from "@/lib/api";
 import { ServiceCard } from "@/components/services/ServiceCard";
 import { ComboCard } from "@/components/services/ComboCard";
+import { Icon } from "@iconify/react";
 
 interface ServiceData {
   id: number;
@@ -95,7 +96,7 @@ export default function ServicesPage() {
 
           {services.length === 0 ? (
             <div className="text-center py-16 text-on-surface-variant">
-              <span className="material-symbols-outlined text-5xl mb-4">spa</span>
+              <Icon icon="material-symbols:spa" className="text-5xl mb-4" />
               <p className="text-body-lg font-medium">Chưa có dịch vụ nào</p>
             </div>
           ) : (
@@ -120,7 +121,7 @@ export default function ServicesPage() {
 
           {combos.length === 0 ? (
             <div className="text-center py-16 text-on-surface-variant">
-              <span className="material-symbols-outlined text-5xl mb-4">diamond</span>
+              <Icon icon="material-symbols:diamond" className="text-5xl mb-4" />
               <p className="text-body-lg font-medium">Chưa có combo nào</p>
             </div>
           ) : (

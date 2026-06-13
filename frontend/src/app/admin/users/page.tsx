@@ -5,6 +5,7 @@ import { get, post, patch } from "@/lib/api";
 import { getUser } from "@/lib/auth";
 import Pagination from "@/components/admin/Pagination";
 import ChatPanel from "@/components/chat/ChatPanel";
+import { Icon } from "@iconify/react";
 
 interface User {
   id: number;
@@ -26,9 +27,9 @@ function Toast({ msg, type, onClose }: { msg: string; type: "success" | "error";
   useEffect(() => { const t = setTimeout(onClose, 3000); return () => clearTimeout(t); }, [onClose]);
   return (
     <div className={`fixed top-6 right-6 z-50 flex items-center gap-3 ${type === "success" ? "bg-green-600" : "bg-red-600"} text-white px-5 py-3 rounded-xl shadow-lg text-body-sm font-semibold animate-slide-in`}>
-      <span className="material-symbols-outlined text-lg">{type === "success" ? "check_circle" : "error"}</span>
+      <Icon icon={type === "success" ? "material-symbols:check-circle" : "material-symbols:error"} className="text-lg" />
       {msg}
-      <button onClick={onClose} className="ml-2 opacity-70 hover:opacity-100"><span className="material-symbols-outlined text-lg">close</span></button>
+      <button onClick={onClose} className="ml-2 opacity-70 hover:opacity-100"><Icon icon="material-symbols:close" className="text-lg" /></button>
       <style>{`@keyframes slide-in { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } } .animate-slide-in { animation: slide-in 0.3s ease-out; }`}</style>
     </div>
   );
@@ -208,7 +209,7 @@ export default function AdminUsersPage() {
             onClick={() => setShowCreate(true)}
             className="flex items-center gap-2 bg-primary text-on-primary px-5 py-2.5 rounded-full text-label-caps text-sm font-semibold hover:bg-primary/90 transition-all active:scale-95"
           >
-            <span className="material-symbols-outlined text-lg">add</span>
+            <Icon icon="material-symbols:add" className="text-lg" />
             Thêm người dùng
           </button>
         )}
@@ -262,7 +263,7 @@ export default function AdminUsersPage() {
                           className="p-2 rounded-full hover:bg-gray-100 transition-colors relative"
                           title="Xem tin nhắn"
                         >
-                          <span className={`material-symbols-outlined text-xl transition-colors ${hasUnread(u.id) ? "text-yellow-500" : "text-gray-300"}`}>notifications</span>
+                          <Icon icon="material-symbols:notifications" className={`text-xl transition-colors ${hasUnread(u.id) ? "text-yellow-500" : "text-gray-300"}`} />
                           {hasUnread(u.id) && <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-red-500 rounded-full" />}
                         </button>
                       </td>

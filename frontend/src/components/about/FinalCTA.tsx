@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { Icon } from "@iconify/react";
 
 export function FinalCTA() {
   return (
@@ -28,7 +29,7 @@ export function FinalCTA() {
           className="inline-flex items-center gap-2 bg-[#F5C26B] hover:bg-[#F5C26B]/90 text-on-surface px-10 py-4 rounded-full font-label-caps text-label-caps font-bold transition-all duration-300 shadow-xl hover:-translate-y-0.5 active:scale-95"
         >
           Book Your Stay
-          <span className="material-symbols-outlined text-lg">calendar_month</span>
+          <Icon icon="material-symbols:calendar-month" className="text-lg" />
         </Link>
       </div>
     </section>

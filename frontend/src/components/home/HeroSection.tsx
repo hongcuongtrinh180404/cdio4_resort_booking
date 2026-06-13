@@ -1,14 +1,14 @@
 "use client";
 
+import { Icon } from "@iconify/react";
+
 export function HeroSection() {
   return (
     <section className="relative max-w-max-width mx-auto px-margin-mobile md:px-margin-desktop pt-12 md:pt-20 pb-32 md:pb-40">
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
         <div className="space-y-8 z-10 relative">
           <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary-container text-on-primary-container font-label-caps text-label-caps font-semibold shadow-sm">
-            <span className="material-symbols-outlined text-sm animate-pulse text-primary">
-              stars
-            </span>
+            <Icon icon="material-symbols:stars" className="text-sm animate-pulse text-primary" />
             Trải nghiệm nghỉ dưỡng cao cấp
           </div>
           <h1 className="font-display-lg-mobile text-display-lg-mobile md:font-display-lg md:text-display-lg text-on-surface leading-tight">

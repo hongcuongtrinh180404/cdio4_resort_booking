@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import { get, post, patch } from "@/lib/api";
 import { formatVND } from "@/lib/utils";
 import Pagination from "@/components/admin/Pagination";
+import { Icon } from "@iconify/react";
 
 interface Service {
   id: number;
@@ -27,9 +28,9 @@ function Toast({ msg, type, onClose }: { msg: string; type: "success" | "error";
   useEffect(() => { const t = setTimeout(onClose, 3000); return () => clearTimeout(t); }, [onClose]);
   return (
     <div className={`fixed top-6 right-6 z-50 flex items-center gap-3 ${type === "success" ? "bg-green-600" : "bg-red-600"} text-white px-5 py-3 rounded-xl shadow-lg text-body-sm font-semibold animate-slide-in`}>
-      <span className="material-symbols-outlined text-lg">{type === "success" ? "check_circle" : "error"}</span>
+      <Icon icon={type === "success" ? "material-symbols:check-circle" : "material-symbols:error"} className="text-lg" />
       {msg}
-      <button onClick={onClose} className="ml-2 opacity-70 hover:opacity-100"><span className="material-symbols-outlined text-lg">close</span></button>
+      <button onClick={onClose} className="ml-2 opacity-70 hover:opacity-100"><Icon icon="material-symbols:close" className="text-lg" /></button>
       <style>{`@keyframes slide-in { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } } .animate-slide-in { animation: slide-in 0.3s ease-out; }`}</style>
     </div>
   );
@@ -146,7 +147,7 @@ export default function AdminServicesPage() {
           <div className="flex items-center justify-between p-6 border-b border-outline">
             <h2 className="font-headline-sm text-headline-sm font-bold text-on-surface">{title}</h2>
             <button onClick={() => setModalOpen(false)} className="p-1 hover:bg-surface-container rounded-full transition-colors">
-              <span className="material-symbols-outlined text-xl">close</span>
+              <Icon icon="material-symbols:close" className="text-xl" />
             </button>
           </div>
 
@@ -170,7 +171,7 @@ export default function AdminServicesPage() {
                   <div key={url} className="relative group w-20 h-20 rounded-lg overflow-hidden border border-outline">
                     <img src={url} alt="" className="w-full h-full object-cover" />
                     <button onClick={() => handleRemoveImageUrl(url)} className="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <span className="material-symbols-outlined text-white text-lg">delete</span>
+                      <Icon icon="material-symbols:delete" className="text-white text-lg" />
                     </button>
                   </div>
                 ))}
@@ -214,7 +215,7 @@ export default function AdminServicesPage() {
           <p className="text-body-md text-on-surface-variant mt-1">Thêm, sửa và quản lý các dịch vụ của resort</p>
         </div>
         <button onClick={openAddModal} className="inline-flex items-center gap-2 bg-primary hover:bg-primary/95 text-white px-5 py-2.5 rounded-lg font-semibold text-body-sm transition-all active:scale-95 shadow-sm">
-          <span className="material-symbols-outlined text-lg">add</span>
+          <Icon icon="material-symbols:add" className="text-lg" />
           Thêm dịch vụ
         </button>
       </div>
@@ -259,7 +260,7 @@ export default function AdminServicesPage() {
                             ? "bg-green-50 text-green-700 border-green-200"
                             : "bg-red-50 text-red-700 border-red-200"
                         }`}>
-                          <span className="material-symbols-outlined text-sm">{s.isActive ? "check_circle" : "cancel"}</span>
+                          <Icon icon={s.isActive ? "material-symbols:check-circle" : "material-symbols:cancel"} className="text-sm" />
                           {s.isActive ? "Hoạt động" : "Tạm ngưng"}
                         </span>
                       </td>
@@ -269,7 +270,7 @@ export default function AdminServicesPage() {
                             onClick={() => openEditModal(s)}
                             className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-body-xs font-semibold bg-primary/10 text-primary hover:bg-primary/20 transition-all active:scale-95"
                           >
-                            <span className="material-symbols-outlined text-sm">edit</span>
+                            <Icon icon="material-symbols:edit" className="text-sm" />
                             Sửa
                           </button>
                           <button
@@ -280,7 +281,7 @@ export default function AdminServicesPage() {
                                 : "bg-green-50 text-green-700 hover:bg-green-100"
                             }`}
                           >
-                            <span className="material-symbols-outlined text-sm">{s.isActive ? "cancel" : "check_circle"}</span>
+                            <Icon icon={s.isActive ? "material-symbols:cancel" : "material-symbols:check-circle"} className="text-sm" />
                             {s.isActive ? "Tạm ngưng" : "Hoạt động"}
                           </button>
                         </div>

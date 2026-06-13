@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { format } from "date-fns";
 import { vi } from "date-fns/locale";
-import { CalendarIcon, Minus, Plus, Search } from "lucide-react";
+import { Icon } from "@iconify/react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
@@ -52,7 +52,7 @@ export function SearchSection() {
                     !checkIn && "text-on-surface-variant"
                   )}
                 >
-                  <CalendarIcon className="mr-2 h-4 w-4 text-primary" />
+                  <Icon icon="lucide:calendar" className="mr-2 h-4 w-4 text-primary" />
                   {checkIn ? (
                     format(checkIn, "dd/MM/yyyy", { locale: vi })
                   ) : (
@@ -94,7 +94,7 @@ export function SearchSection() {
                     !checkOut && "text-on-surface-variant"
                   )}
                 >
-                  <CalendarIcon className="mr-2 h-4 w-4 text-primary" />
+                  <Icon icon="lucide:calendar" className="mr-2 h-4 w-4 text-primary" />
                   {checkOut ? (
                     format(checkOut, "dd/MM/yyyy", { locale: vi })
                   ) : (
@@ -122,7 +122,7 @@ export function SearchSection() {
             </label>
             <div className="flex items-center gap-3 rounded-xl border border-outline bg-surface px-4 py-2.5 h-11">
               <div className="flex items-center gap-1 flex-1 min-w-0">
-                <span className="material-symbols-outlined text-on-surface-variant text-lg">group</span>
+                <Icon icon="material-symbols:group" className="text-on-surface-variant text-lg" />
                 <span className="text-sm text-on-surface truncate">
                   {adults} Người lớn{children > 0 && `, ${children} Trẻ em`}
                 </span>
@@ -130,7 +130,7 @@ export function SearchSection() {
               <Popover>
                 <PopoverTrigger asChild>
                   <Button variant="ghost" size="icon" className="h-7 w-7 rounded-full text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high">
-                    <Plus className="h-4 w-4" />
+                    <Icon icon="lucide:plus" className="h-4 w-4" />
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-64 p-4" align="end">
@@ -148,7 +148,7 @@ export function SearchSection() {
                           disabled={adults <= 1}
                           className="flex h-8 w-8 items-center justify-center rounded-full border border-outline text-on-surface-variant hover:bg-surface-container-high disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
                         >
-                          <Minus className="h-3.5 w-3.5" />
+                          <Icon icon="lucide:minus" className="h-3.5 w-3.5" />
                         </button>
                         <span className="w-6 text-center text-sm font-semibold tabular-nums">
                           {adults}
@@ -159,7 +159,7 @@ export function SearchSection() {
                           disabled={adults >= MAX_ADULTS}
                           className="flex h-8 w-8 items-center justify-center rounded-full border border-outline text-primary hover:bg-primary/5 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
                         >
-                          <Plus className="h-3.5 w-3.5" />
+                          <Icon icon="lucide:plus" className="h-3.5 w-3.5" />
                         </button>
                       </div>
                     </div>
@@ -177,7 +177,7 @@ export function SearchSection() {
                           disabled={children <= 0}
                           className="flex h-8 w-8 items-center justify-center rounded-full border border-outline text-on-surface-variant hover:bg-surface-container-high disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
                         >
-                          <Minus className="h-3.5 w-3.5" />
+                          <Icon icon="lucide:minus" className="h-3.5 w-3.5" />
                         </button>
                         <span className="w-6 text-center text-sm font-semibold tabular-nums">
                           {children}
@@ -188,7 +188,7 @@ export function SearchSection() {
                           disabled={children >= MAX_CHILDREN}
                           className="flex h-8 w-8 items-center justify-center rounded-full border border-outline text-primary hover:bg-primary/5 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
                         >
-                          <Plus className="h-3.5 w-3.5" />
+                          <Icon icon="lucide:plus" className="h-3.5 w-3.5" />
                         </button>
                       </div>
                     </div>
@@ -204,7 +204,7 @@ export function SearchSection() {
             size="lg"
             className="w-full h-11 gap-2 text-sm font-semibold shadow hover:shadow-md active:scale-[0.98] transition-all"
           >
-            <Search className="h-4 w-4" />
+            <Icon icon="lucide:search" className="h-4 w-4" />
             Tìm phòng
           </Button>
         </form>

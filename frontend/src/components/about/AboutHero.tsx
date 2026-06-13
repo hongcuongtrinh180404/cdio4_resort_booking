@@ -1,5 +1,7 @@
 "use client";
 
+import { Icon } from "@iconify/react";
+
 export function AboutHero() {
   const scrollToGallery = () => {
     document.getElementById("gallery")?.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -34,12 +36,12 @@ export function AboutHero() {
           className="bg-[#F5C26B] hover:bg-[#F5C26B]/90 text-on-surface px-10 py-4 rounded-full font-label-caps text-label-caps font-bold transition-all duration-300 shadow-xl hover:-translate-y-0.5 active:scale-95 inline-flex items-center gap-2"
         >
           Explore Resort
-          <span className="material-symbols-outlined text-lg">arrow_downward</span>
+          <Icon icon="material-symbols:arrow-downward" className="text-lg" />
         </button>
       </div>
 
       <div className="absolute bottom-8 left-1/2 -translate-x-1/2 animate-bounce">
-        <span className="material-symbols-outlined text-surface-bright/60 text-2xl">expand_more</span>
+        <Icon icon="material-symbols:expand-more" className="text-surface-bright/60 text-2xl" />
       </div>
     </section>
   );

@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import { get } from "@/lib/api";
 import { formatVND } from "@/lib/utils";
 import Link from "next/link";
+import { Icon } from "@iconify/react";
 
 interface ServiceItem {
   serviceId: number;
@@ -66,7 +67,7 @@ function ComboDetailContent() {
         onClick={() => router.back()}
         className="inline-flex items-center gap-1 text-primary font-label-caps text-label-caps font-bold hover:text-primary/80 transition-colors mb-6"
       >
-        <span className="material-symbols-outlined text-sm">arrow_back</span>
+        <Icon icon="material-symbols:arrow-back" className="text-sm" />
         Quay lại
       </button>
 
@@ -78,7 +79,7 @@ function ComboDetailContent() {
               <img src={images[selectedImage]} alt={combo.name} className="w-full h-full object-cover" />
             ) : (
               <div className="w-full h-full bg-surface-container-high flex items-center justify-center text-on-surface-variant">
-                <span className="material-symbols-outlined text-4xl">diamond</span>
+                <Icon icon="material-symbols:diamond" className="text-4xl" />
               </div>
             )}
           </div>
@@ -135,7 +136,7 @@ function ComboDetailContent() {
               {combo.items.map((item) => (
                 <div key={item.serviceId} className="flex items-center justify-between bg-surface-container-low px-4 py-3 rounded-lg border border-outline/50">
                   <div className="flex items-center gap-3">
-                    <span className="material-symbols-outlined text-primary text-lg">check_circle</span>
+                    <Icon icon="material-symbols:check-circle" className="text-primary text-lg" />
                     <div>
                       <span className="text-body-md text-on-surface font-medium">{item.service.name}</span>
                       {item.service.description && (
@@ -152,7 +153,7 @@ function ComboDetailContent() {
           {/* Savings badge */}
           {savings > 0 && (
             <div className="bg-secondary-container/30 rounded-xl px-5 py-4 flex items-center gap-3 border border-secondary/20">
-              <span className="material-symbols-outlined text-secondary text-2xl">sell</span>
+              <Icon icon="material-symbols:sell" className="text-secondary text-2xl" />
               <div>
                 <p className="text-body-sm text-on-surface font-semibold">
                   Tiết kiệm <strong className="text-secondary">{formatVND(savings)}</strong> so với mua lẻ

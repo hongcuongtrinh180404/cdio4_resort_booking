@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { getUser, removeToken } from "@/lib/auth";
 import type { JwtPayload } from "@/lib/auth";
+import { Icon } from "@iconify/react";
 
 const NAV_LINKS = [
   { href: "/", label: "Trang chủ" },
@@ -123,9 +124,7 @@ export function Navbar() {
             className="md:hidden text-on-surface"
             onClick={() => setMobileOpen(!mobileOpen)}
           >
-            <span className="material-symbols-outlined text-2xl">
-              {mobileOpen ? "close" : "menu"}
-            </span>
+            <Icon icon={mobileOpen ? "material-symbols:close" : "material-symbols:menu"} className="text-2xl" />
           </button>
         </div>
       </div>

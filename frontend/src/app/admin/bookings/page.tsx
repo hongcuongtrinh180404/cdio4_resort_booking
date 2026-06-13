@@ -5,6 +5,7 @@ import { get, patch } from "@/lib/api";
 import { formatVND } from "@/lib/utils";
 import { format } from "date-fns";
 import { vi } from "date-fns/locale";
+import { Icon } from "@iconify/react";
 import Pagination from "@/components/admin/Pagination";
 
 interface RoomType {
@@ -56,9 +57,9 @@ function Toast({ msg, type, onClose }: { msg: string; type: "success" | "error";
   useEffect(() => { const t = setTimeout(onClose, 3000); return () => clearTimeout(t); }, [onClose]);
   return (
     <div className={`fixed top-6 right-6 z-50 flex items-center gap-3 ${type === "success" ? "bg-green-600" : "bg-red-600"} text-white px-5 py-3 rounded-xl shadow-lg text-body-sm font-semibold`}>
-      <span className="material-symbols-outlined text-lg">{type === "success" ? "check_circle" : "error"}</span>
+      <Icon icon={type === "success" ? "material-symbols:check-circle" : "material-symbols:error"} className="text-lg" />
       {msg}
-      <button onClick={onClose} className="ml-2 opacity-70 hover:opacity-100"><span className="material-symbols-outlined text-lg">close</span></button>
+      <button onClick={onClose} className="ml-2 opacity-70 hover:opacity-100"><Icon icon="material-symbols:close" className="text-lg" /></button>
       <style>{`@keyframes slide-in { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } } .animate-slide-in { animation: slide-in 0.3s ease-out; }`}</style>
     </div>
   );
@@ -159,7 +160,7 @@ export default function AdminBookingsPage() {
           <p className="text-body-md text-on-surface-variant mt-1">Theo dõi và xử lý đặt phòng</p>
         </div>
         <button onClick={() => setShowFilters(!showFilters)} className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-outline text-body-sm font-semibold text-on-surface hover:bg-surface-container-low transition-all">
-          <span className="material-symbols-outlined text-lg">tune</span>
+          <Icon icon="material-symbols:tune" className="text-lg" />
           {showFilters ? "Ẩn lọc" : "Lọc nâng cao"}
         </button>
       </div>
@@ -168,7 +169,7 @@ export default function AdminBookingsPage() {
       <div className="mb-4">
         <div className="relative">
           <span className="absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant">
-            <span className="material-symbols-outlined text-lg">search</span>
+            <Icon icon="material-symbols:search" className="text-lg" />
           </span>
           <input
             value={search}
@@ -292,7 +293,7 @@ export default function AdminBookingsPage() {
                 {detail && <p className="text-body-sm text-primary font-mono mt-0.5">{detail.bookingCode}</p>}
               </div>
               <button onClick={() => setDetail(null)} className="p-1 hover:bg-surface-container rounded-full transition-colors">
-                <span className="material-symbols-outlined text-xl">close</span>
+                <Icon icon="material-symbols:close" className="text-xl" />
               </button>
             </div>
 
@@ -303,7 +304,7 @@ export default function AdminBookingsPage() {
                 {/* Customer Info */}
                 <section>
                   <h3 className="flex items-center gap-2 text-label-caps text-on-surface-variant font-bold tracking-wider mb-3">
-                    <span className="material-symbols-outlined text-lg">person</span>
+                    <Icon icon="material-symbols:person" className="text-lg" />
                     THÔNG TIN KHÁCH
                   </h3>
                   <div className="bg-surface-container-low rounded-lg p-4 space-y-2 text-body-sm">
@@ -316,7 +317,7 @@ export default function AdminBookingsPage() {
                 {/* Stay Info */}
                 <section>
                   <h3 className="flex items-center gap-2 text-label-caps text-on-surface-variant font-bold tracking-wider mb-3">
-                    <span className="material-symbols-outlined text-lg">meeting_room</span>
+                    <Icon icon="material-symbols:meeting-room" className="text-lg" />
                     THÔNG TIN LƯU TRÚ
                   </h3>
                   <div className="bg-surface-container-low rounded-lg p-4 space-y-2 text-body-sm">
@@ -335,8 +336,8 @@ export default function AdminBookingsPage() {
                 {(detail.services?.length > 0 || detail.combos?.length > 0) && (
                   <section>
                     <h3 className="flex items-center gap-2 text-label-caps text-on-surface-variant font-bold tracking-wider mb-3">
-                      <span className="material-symbols-outlined text-lg">spa</span>
-                      DỊCH VỤ / COMBO ĐI KÈM
+                    <Icon icon="material-symbols:spa" className="text-lg" />
+                    DỊCH VỤ / COMBO ĐI KÈM
                     </h3>
                     <div className="bg-surface-container-low rounded-lg p-4 space-y-2 text-body-sm">
                       {detail.services?.map((s, i) => (
@@ -348,7 +349,7 @@ export default function AdminBookingsPage() {
                       {detail.combos?.map((c, i) => (
                         <div key={`c-${i}`} className="flex justify-between">
                           <span className="flex items-center gap-1 text-on-surface">
-                            <span className="material-symbols-outlined text-[14px] text-primary">diamond</span>
+                            <Icon icon="material-symbols:diamond" className="text-[14px] text-primary" />
                             {c.combo.name} x{c.quantity}
                           </span>
                           <span className="font-medium text-on-surface">{formatVND(Number(c.comboPriceSnapshot) * c.quantity)}</span>
@@ -361,7 +362,7 @@ export default function AdminBookingsPage() {
                 {/* Payment */}
                 <section>
                   <h3 className="flex items-center gap-2 text-label-caps text-on-surface-variant font-bold tracking-wider mb-3">
-                    <span className="material-symbols-outlined text-lg">payments</span>
+                    <Icon icon="material-symbols:payments" className="text-lg" />
                     THANH TOÁN
                   </h3>
                   <div className="bg-surface-container-low rounded-lg p-4 space-y-2 text-body-sm">
@@ -373,7 +374,7 @@ export default function AdminBookingsPage() {
                       <>
                         <div className="flex justify-between"><span className="text-on-surface-variant">Trạng thái</span>
                           <span className={`font-semibold ${detail.payment.status === "SUCCESS" ? "text-green-600" : "text-yellow-600"}`}>
-                            {detail.payment.status === "SUCCESS" ? "✅ Đã thanh toán" : detail.payment.status === "PENDING" ? "⏳ Chờ thanh toán" : "❌ Thất bại"}
+                            {detail.payment.status === "SUCCESS" ? <><Icon icon="material-symbols:check-circle" className="inline-block align-middle" /> Đã thanh toán</> : detail.payment.status === "PENDING" ? <><Icon icon="material-symbols:hourglass" className="inline-block align-middle" /> Chờ thanh toán</> : <><Icon icon="material-symbols:close" className="inline-block align-middle" /> Thất bại</>}
                           </span>
                         </div>
                         <div className="flex justify-between"><span className="text-on-surface-variant">Mã giao dịch</span><span className="font-mono text-xs">{detail.payment.transactionRef}</span></div>
@@ -382,7 +383,7 @@ export default function AdminBookingsPage() {
                         )}
                       </>
                     ) : (
-                      <div className="text-yellow-600 font-semibold">⏳ Chưa thanh toán</div>
+                      <div className="text-yellow-600 font-semibold"><Icon icon="material-symbols:hourglass" className="inline-block align-middle" /> Chưa thanh toán</div>
                     )}
                   </div>
                 </section>
@@ -395,7 +396,7 @@ export default function AdminBookingsPage() {
                       disabled={actionId === detail.id}
                       className="w-full flex items-center justify-center gap-2 bg-red-600 hover:bg-red-700 text-white py-3 rounded-lg font-bold text-body-sm transition-all active:scale-95 disabled:opacity-50"
                     >
-                      <span className="material-symbols-outlined text-lg">cancel</span>
+                      <Icon icon="material-symbols:cancel" className="text-lg" />
                       {actionId === detail.id ? "Đang xử lý..." : "Hủy booking"}
                     </button>
                   </div>

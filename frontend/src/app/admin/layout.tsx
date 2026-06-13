@@ -5,11 +5,12 @@ import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
 import { removeToken, getUser } from "@/lib/auth";
 import type { JwtPayload } from "@/lib/auth";
+import { Icon } from "@iconify/react";
 
 const SIDEBAR_LINKS = [
   { href: "/admin/dashboard", label: "Dashboard", icon: "dashboard" },
-  { href: "/admin/bookings", label: "Quản lý booking", icon: "receipt_long" },
-  { href: "/admin/rooms", label: "Quản lý phòng", icon: "meeting_room" },
+  { href: "/admin/bookings", label: "Quản lý booking", icon: "receipt-long" },
+  { href: "/admin/rooms", label: "Quản lý phòng", icon: "meeting-room" },
   { href: "/admin/services", label: "Dịch vụ", icon: "spa" },
   { href: "/admin/service-combos", label: "Combo", icon: "diamond" },
   { href: "/admin/reports", label: "Báo cáo doanh thu", icon: "finance" },
@@ -49,7 +50,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           {/* Logo */}
           <div className="h-[72px] flex items-center gap-3 px-4 border-b border-outline">
             <button onClick={() => setSidebarOpen(!sidebarOpen)} className="shrink-0 text-on-surface hover:text-primary transition-colors">
-              <span className="material-symbols-outlined">{sidebarOpen ? "menu_open" : "menu"}</span>
+              <Icon icon={sidebarOpen ? "material-symbols:menu-open" : "material-symbols:menu"} className="text-lg" />
             </button>
             {sidebarOpen && (
               <Link href="/admin/dashboard" className="flex items-center gap-2">
@@ -77,7 +78,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                     }`}
                   title={!sidebarOpen ? link.label : undefined}
                 >
-                  <span className="material-symbols-outlined text-lg shrink-0">{link.icon}</span>
+                  <Icon icon={`material-symbols:${link.icon}`} className="text-lg shrink-0" />
                   {sidebarOpen && <span>{link.label}</span>}
                 </Link>
               );
@@ -91,7 +92,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-body-sm text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface transition-all"
               title={!sidebarOpen ? "Về trang chủ" : undefined}
             >
-              <span className="material-symbols-outlined text-lg shrink-0">home</span>
+              <Icon icon="material-symbols:home" className="text-lg shrink-0" />
               {sidebarOpen && <span>Về trang chủ</span>}
             </Link>
             {user && sidebarOpen && (
@@ -105,7 +106,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-body-sm text-on-surface-variant hover:bg-red-50 hover:text-error transition-all w-full"
               title={!sidebarOpen ? "Đăng xuất" : undefined}
             >
-              <span className="material-symbols-outlined text-lg shrink-0">logout</span>
+              <Icon icon="material-symbols:logout" className="text-lg shrink-0" />
               {sidebarOpen && <span>Đăng xuất</span>}
             </button>
           </div>

@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { Icon } from "@iconify/react";
 
 interface Props {
   currentPage: number;
@@ -27,7 +27,7 @@ export function Pagination({ currentPage, totalPages, onPageChange }: Props) {
         disabled={currentPage <= 1}
         className="w-9 h-9 flex items-center justify-center rounded-lg border border-outline hover:bg-surface-container transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
       >
-        <ChevronLeft className="h-4 w-4" />
+        <Icon icon="lucide:chevron-left" className="h-4 w-4" />
       </button>
       {pages.map((p, i) =>
         p === "..." ? (
@@ -51,7 +51,7 @@ export function Pagination({ currentPage, totalPages, onPageChange }: Props) {
         disabled={currentPage >= totalPages}
         className="w-9 h-9 flex items-center justify-center rounded-lg border border-outline hover:bg-surface-container transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
       >
-        <ChevronRight className="h-4 w-4" />
+        <Icon icon="lucide:chevron-right" className="h-4 w-4" />
       </button>
     </div>
   );

@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { io, Socket } from "socket.io-client";
 import { get, post } from "@/lib/api";
 import { getToken } from "@/lib/auth";
+import { Icon } from "@iconify/react";
 
 interface Message {
   id: number;
@@ -112,14 +113,14 @@ export default function ChatPanel({
         {/* Header */}
         <div className="bg-primary text-on-primary px-5 py-4 flex items-center gap-3 shrink-0">
           <div className="w-9 h-9 rounded-full bg-white/20 flex items-center justify-center">
-            <span className="material-symbols-outlined text-lg">chat</span>
+            <Icon icon="material-symbols:chat" className="text-lg" />
           </div>
           <div className="flex-1 min-w-0">
             <p className="font-semibold text-sm">Chat với {userName}</p>
             <p className="text-xs text-white/70">Nhân viên hỗ trợ</p>
           </div>
           <button onClick={onClose} className="text-white/70 hover:text-white transition-colors">
-            <span className="material-symbols-outlined text-xl">close</span>
+            <Icon icon="material-symbols:close" className="text-xl" />
           </button>
         </div>
 
@@ -148,7 +149,7 @@ export default function ChatPanel({
                     {msg.role === "staff" && msg.staff
                       ? `${msg.staff.fullName} · `
                       : msg.role === "assistant"
-                      ? "🤖 AI · "
+                      ? <><Icon icon="mdi:robot" className="inline-block align-middle" /> AI · </>
                       : ""}
                     {new Date(msg.createdAt).toLocaleTimeString("vi-VN", {
                       hour: "2-digit",
@@ -178,7 +179,7 @@ export default function ChatPanel({
                 disabled={!input.trim()}
                 className="w-10 h-10 rounded-full bg-primary text-on-primary flex items-center justify-center hover:bg-primary/90 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
               >
-                <span className="material-symbols-outlined text-lg">send</span>
+                <Icon icon="material-symbols:send" className="text-lg" />
               </button>
             </div>
           </div>
