@@ -173,7 +173,6 @@ export class ChatService {
             "Khi khách hỏi tìm phòng, hãy gọi searchAvailableRooms ngay với thông tin khách đã cung cấp. " +
             "Không hỏi thêm thông tin tiện nghi, dịch vụ hay combo trừ khi khách yêu cầu. " +
             "Ví dụ: khách nói 'phòng dưới 2 triệu cho 2 người' → gọi searchAvailableRooms với capacity=2, maxPrice=2000000. " +
-            "Nếu khách chưa cung cấp ngày, hãy hỏi ngày check-in và check-out trước. " +
             "Khi khách yêu cầu đặt một phòng cụ thể, hãy hỏi ngày check-in và check-out trước " +
             "khi gọi proposeBooking. " +
             "Khi khách yêu cầu đặt phòng bằng tên hoặc số phòng (VD: D101, Deluxe 201), " +
@@ -208,17 +207,20 @@ export class ChatService {
           action = result.action;
           actionData = result.data;
           redirectUrl = undefined;
+
+          const toolContent: any = { available: result.data.available, roomName: result.data.roomName, roomId: result.data.roomId };
+          if (result.data.available) {
+            toolContent.estimatedTotal = result.data.estimatedTotal;
+            toolContent.numberOfNights = result.data.numberOfNights;
+            toolContent.checkInDate = result.data.checkInDate;
+            toolContent.checkOutDate = result.data.checkOutDate;
+          } else {
+            toolContent.message = result.data.message;
+          }
+
           messages.push({
             role: "tool",
-            content: JSON.stringify({
-              available: true,
-              roomName: result.data.roomName,
-              roomId: result.data.roomId,
-              estimatedTotal: result.data.estimatedTotal,
-              numberOfNights: result.data.numberOfNights,
-              checkInDate: result.data.checkInDate,
-              checkOutDate: result.data.checkOutDate,
-            }),
+            content: JSON.stringify(toolContent),
             tool_call_id: toolCall.id,
           });
         } else {
@@ -435,7 +437,17 @@ export class ChatService {
       },
       select: { id: true },
     });
-    if (conflicting) throw new BadRequestException("Phòng đã có người đặt trong khoảng thời gian này");
+    if (conflicting) {
+      return {
+        action: "booking_proposal",
+        data: {
+          available: false,
+          roomId: room.id,
+          roomName: room.name,
+          message: `Phòng ${room.name} đã có người đặt trong khoảng ${args.checkInDate} đến ${args.checkOutDate}.`,
+        },
+      };
+    }
 
     const roomPrice = Number(room.pricePerNight);
     const estimatedTotal = roomPrice * numberOfNights;
@@ -443,6 +455,7 @@ export class ChatService {
     return {
       action: "booking_proposal",
       data: {
+        available: true,
         roomId: room.id,
         roomName: room.name,
         checkInDate: args.checkInDate,

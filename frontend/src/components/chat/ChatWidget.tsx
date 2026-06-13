@@ -81,6 +81,15 @@ function BookingCard({ data }: { data: any }) {
 }
 
 function BookingProposal({ data, onConfirm, confirming }: { data: any; onConfirm: () => void; confirming: boolean }) {
+  if (data.available === false) {
+    return (
+      <div className="mt-2 p-4 rounded-xl bg-orange-50 border border-orange-300">
+        <p className="text-sm font-bold text-orange-800 mb-1"><Icon icon="material-symbols:info-outline" className="inline-block align-middle" /> Phòng đã có người đặt</p>
+        {data.message && <p className="text-xs text-orange-700">{data.message}</p>}
+      </div>
+    );
+  }
+
   const total = data.estimatedTotal ? Number(data.estimatedTotal) : 0;
   return (
     <div className="mt-2 p-4 rounded-xl bg-green-50 border border-green-300">
@@ -102,7 +111,7 @@ function BookingProposal({ data, onConfirm, confirming }: { data: any; onConfirm
 export default function ChatWidget() {
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([
-    { role: "assistant", content: "Xin chào! Tôi là trợ lý đặt phòng của DTUVIVI. Tôi có thể giúp gì cho bạn?" },
+    { role: "assistant", content: "Xin chào! Tôi là trợ lý đặt phòng của DTUVIVU. Tôi có thể giúp gì cho bạn?" },
   ]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
