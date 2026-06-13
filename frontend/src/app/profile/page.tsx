@@ -280,7 +280,10 @@ export default function ProfilePage() {
                 <div className="space-y-3">
                   {bookings.map((b) => {
                     const hoursSinceCreation = (Date.now() - new Date(b.createdAt).getTime()) / (1000 * 60 * 60);
-                    const canCancel = b.status === "PENDING" || (b.status === "CONFIRMED" && hoursSinceCreation <= 24);
+                    const isEmployeeOrAdmin = profile?.role === "EMPLOYEE" || profile?.role === "ADMIN";
+                    const canCancel = isEmployeeOrAdmin
+                      ? (b.status === "PENDING" || b.status === "CONFIRMED")
+                      : (b.status === "PENDING" || (b.status === "CONFIRMED" && hoursSinceCreation <= 24));
                     return (
                       <div key={b.id} className="bg-white rounded-lg border border-outline p-4 hover:shadow-md transition-shadow cursor-pointer">
                         <div onClick={() => router.push(`/bookings/${b.id}`)} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">

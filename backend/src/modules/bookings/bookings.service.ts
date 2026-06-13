@@ -249,7 +249,7 @@ export class BookingsService {
       throw new BadRequestException("Cannot cancel this booking");
     }
 
-    if (booking.status === "CONFIRMED") {
+    if (role === "GUEST" && booking.status === "CONFIRMED") {
       const hoursSinceCreation = (Date.now() - new Date(booking.createdAt).getTime()) / (1000 * 60 * 60);
       if (hoursSinceCreation > 24) {
         throw new BadRequestException("Cannot cancel booking after 24 hours from creation");

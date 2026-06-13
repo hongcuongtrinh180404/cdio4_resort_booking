@@ -79,6 +79,25 @@ function BookingCard({ data }: { data: any }) {
   );
 }
 
+function BookingProposal({ data, onConfirm, confirming }: { data: any; onConfirm: () => void; confirming: boolean }) {
+  const total = data.estimatedTotal ? Number(data.estimatedTotal) : 0;
+  return (
+    <div className="mt-2 p-4 rounded-xl bg-green-50 border border-green-300">
+      <p className="text-sm font-bold text-green-800 mb-2">✓ Phòng còn trống</p>
+      <p className="text-sm font-semibold text-on-surface">{data.roomName}</p>
+      <p className="text-xs text-on-surface-variant mt-1">{data.checkInDate} → {data.checkOutDate} ({data.numberOfNights} đêm)</p>
+      <p className="text-lg font-bold text-green-700 mt-2">{formatVND(total)}</p>
+      <button
+        onClick={onConfirm}
+        disabled={confirming}
+        className="mt-3 inline-flex items-center justify-center w-full bg-green-600 text-white py-2.5 rounded-full text-sm font-semibold hover:bg-green-700 transition-all active:scale-95 disabled:opacity-50"
+      >
+        {confirming ? "Đang xử lý..." : "Đặt ngay"}
+      </button>
+    </div>
+  );
+}
+
 export default function ChatWidget() {
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([
@@ -86,6 +105,7 @@ export default function ChatWidget() {
   ]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+  const [confirming, setConfirming] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -132,11 +152,6 @@ export default function ChatWidget() {
         ...prev,
         { role: "assistant", content: res.reply, action: res.action, data: res.data, redirectUrl: res.redirectUrl },
       ]);
-
-      const redirectUrl = res.redirectUrl;
-      if (redirectUrl) {
-        setTimeout(() => { window.location.href = redirectUrl; }, 2000);
-      }
     } catch {
       setMessages((prev) => [
         ...prev,
@@ -144,6 +159,27 @@ export default function ChatWidget() {
       ]);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleConfirmBooking = async (data: any) => {
+    setConfirming(true);
+    try {
+      const res = await post<{ bookingId: number; bookingCode: string; totalAmount: number }>("/chat/confirm-booking", {
+        roomId: data.roomId,
+        checkInDate: data.checkInDate,
+        checkOutDate: data.checkOutDate,
+        serviceIds: data.serviceIds?.length ? data.serviceIds : undefined,
+        comboIds: data.comboIds?.length ? data.comboIds : undefined,
+      });
+      window.location.href = `/bookings/${res.bookingId}`;
+    } catch {
+      setMessages((prev) => [
+        ...prev,
+        { role: "assistant", content: "Xin lỗi, đã có lỗi xảy ra khi đặt phòng. Vui lòng thử lại sau." },
+      ]);
+    } finally {
+      setConfirming(false);
     }
   };
 
@@ -197,6 +233,9 @@ export default function ChatWidget() {
                   )}
                   {msg.role === "assistant" && msg.action === "booking" && msg.data && (
                     <BookingCard data={msg.data} />
+                  )}
+                  {msg.role === "assistant" && msg.action === "booking_proposal" && msg.data && (
+                    <BookingProposal data={msg.data} onConfirm={() => handleConfirmBooking(msg.data)} confirming={confirming} />
                   )}
                 </div>
               </div>

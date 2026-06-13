@@ -6,7 +6,7 @@ import { format } from "date-fns";
 import { vi } from "date-fns/locale";
 import { get, post, patch } from "@/lib/api";
 import { formatVND } from "@/lib/utils";
-import { isAuthenticated } from "@/lib/auth";
+import { isAuthenticated, getUser } from "@/lib/auth";
 
 interface Booking {
   id: number;
@@ -414,7 +414,13 @@ export default function BookingDetailPage() {
                   {paying ? "Đang xử lý..." : "Thanh toán ngay"}
                 </button>
               )}
-              {(booking.status === "PENDING" || (booking.status === "CONFIRMED" && (Date.now() - new Date(booking.createdAt).getTime()) / (1000 * 60 * 60) <= 24)) && (
+              {(() => {
+                const user = getUser();
+                const isEmployeeOrAdmin = user?.role === "EMPLOYEE" || user?.role === "ADMIN";
+                const canCancelGuest = booking.status === "PENDING" || (booking.status === "CONFIRMED" && (Date.now() - new Date(booking.createdAt).getTime()) / (1000 * 60 * 60) <= 24);
+                const canCancelStaff = booking.status === "PENDING" || booking.status === "CONFIRMED";
+                return (isEmployeeOrAdmin ? canCancelStaff : canCancelGuest);
+              })() && (
                 <button onClick={handleCancel} disabled={cancelling} className="inline-flex items-center justify-center gap-2 bg-red-600 hover:bg-red-700 text-white px-8 py-3.5 rounded-lg font-bold text-body-md transition-all active:scale-95 shadow-sm disabled:opacity-50">
                   <span className="material-symbols-outlined">cancel</span>
                   {cancelling ? "Đang xử lý..." : "Hủy đặt phòng"}

@@ -388,7 +388,7 @@ export default function AdminBookingsPage() {
                 </section>
 
                 {/* Actions */}
-                {detail.status === "CONFIRMED" && detail.payment?.status === "SUCCESS" && (
+                {(detail.status === "PENDING" || detail.status === "CONFIRMED") && (
                   <div className="border-t border-outline pt-4">
                     <button
                       onClick={() => handleCancel(detail.id)}
