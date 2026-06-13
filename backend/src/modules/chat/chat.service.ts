@@ -1,7 +1,6 @@
 import { Injectable, BadRequestException } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import Groq from "groq-sdk";
-import { GoogleGenerativeAI } from "@google/generative-ai";
 import { PrismaService } from "../../database/prisma/prisma.service";
 import { ChatGateway } from "./chat.gateway";
 import { RoomsService } from "../rooms/rooms.service";
@@ -11,20 +10,9 @@ import { BookingsService } from "../bookings/bookings.service";
 import { ConfirmBookingDto } from "./dto/chat.dto";
 import { BookingStatus } from "../../common/enums/booking-status.enum";
 
-interface ModelResult {
-  content: string | null;
-  toolCalls: Array<{ id: string; name: string; args: string }> | null;
-}
-
-interface ModelProvider {
-  name: string;
-  call: (messages: any[], tools: any[]) => Promise<ModelResult>;
-}
-
 @Injectable()
 export class ChatService {
-  private groq: Groq;
-  private modelProviders: ModelProvider[];
+  private groqClients: Groq[];
 
   constructor(
     private configService: ConfigService,
@@ -35,22 +23,14 @@ export class ChatService {
     private serviceCombosService: ServiceCombosService,
     private bookingsService: BookingsService,
   ) {
-    const groqKey = this.configService.get<string>("GROQ_API_KEY");
-    if (!groqKey) throw new Error("GROQ_API_KEY not configured");
-    this.groq = new Groq({ apiKey: groqKey });
+    const keys = [
+      this.configService.get<string>("GROQ_API_KEY"),
+      this.configService.get<string>("GROQ_API_KEY_2"),
+      this.configService.get<string>("GROQ_API_KEY_3"),
+    ].filter((k): k is string => !!k);
 
-    this.modelProviders = [
-      { name: "groq (llama-3.3-70b-versatile)", call: (m, t) => this.callGroq(m, t) },
-    ];
-
-    const googleKey = this.configService.get<string>("GOOGLE_API_KEY");
-    if (googleKey) {
-      const googleAI = new GoogleGenerativeAI(googleKey);
-      this.modelProviders.push(
-        { name: "gemini (gemini-2.5-flash-001)", call: (m, t) => this.callGemini(m, t, googleAI, "gemini-2.5-flash-001") },
-        { name: "gemini (gemini-2.0-flash)", call: (m, t) => this.callGemini(m, t, googleAI, "gemini-2.0-flash") },
-      );
-    }
+    if (keys.length === 0) throw new Error("No GROQ_API_KEY configured");
+    this.groqClients = keys.map((key) => new Groq({ apiKey: key }));
   }
 
   private functions = [
@@ -62,15 +42,15 @@ export class ChatService {
         parameters: {
           type: "object",
           properties: {
-            checkIn: { type: "string", description: "Ngày nhận phòng (YYYY-MM-DD)" },
-            checkOut: { type: "string", description: "Ngày trả phòng (YYYY-MM-DD)" },
+            checkIn: { type: "string", description: "Ngày nhận phòng (YYYY-MM-DD). Chỉ dùng khi khách cung cấp ngày cụ thể." },
+            checkOut: { type: "string", description: "Ngày trả phòng (YYYY-MM-DD). Chỉ dùng khi khách cung cấp ngày cụ thể." },
             capacity: { type: "integer", description: "Số lượng khách tối thiểu (>= 1). Chỉ dùng khi khách yêu cầu.", minimum: 1 },
             roomTypeId: { type: "integer", description: "ID loại phòng (>= 1). Chỉ dùng khi khách yêu cầu loại phòng cụ thể.", minimum: 1 },
             minPrice: { type: "number", description: "Giá tối thiểu mỗi đêm (VNĐ). Chỉ dùng khi khách yêu cầu cụ thể.", minimum: 0 },
             maxPrice: { type: "number", description: "Giá tối đa mỗi đêm (VNĐ). Chỉ dùng khi khách yêu cầu cụ thể.", minimum: 0 },
             amenityIds: { type: "string", description: "Danh sách ID tiện nghi, cách nhau bằng dấu phẩy. Ví dụ: '1,3,5'. Dùng searchAmenities để tra cứu ID. Chỉ dùng khi khách yêu cầu tiện nghi." },
           },
-          required: ["checkIn", "checkOut"],
+          required: [],
         },
       },
     },
@@ -104,7 +84,7 @@ export class ChatService {
       type: "function" as const,
       function: {
         name: "searchAmenities",
-        description: "Xem danh sách tất cả tiện nghi (amenities) của khách sạn để lấy ID tiện nghi.",
+        description: "Xem danh sách tất cả tiện nghi (amenities) của khách sạn.",
         parameters: {
           type: "object",
           properties: {},
@@ -116,11 +96,11 @@ export class ChatService {
       type: "function" as const,
       function: {
         name: "proposeBooking",
-        description: "Kiểm tra phòng còn trống và đề xuất đặt phòng cho khách. Chỉ gọi khi đã có phòng, ngày check-in và check-out.",
+        description: "Kiểm tra phòng còn trống và đề xuất đặt phòng cho khách. Chỉ gọi khi đã có phòng, ngày check-in và check-out. Nhận ID phòng (số) hoặc tên/số phòng (chữ).",
         parameters: {
           type: "object",
           properties: {
-            roomId: { type: "integer", description: "ID của phòng muốn đặt" },
+            roomId: { type: "string", description: "ID phòng (số) hoặc tên/số phòng (chữ). VD: '5', 'D101', 'Peaceful Family Suite'" },
             checkInDate: { type: "string", description: "Ngày nhận phòng (YYYY-MM-DD)" },
             checkOutDate: { type: "string", description: "Ngày trả phòng (YYYY-MM-DD)" },
           },
@@ -130,133 +110,26 @@ export class ChatService {
     },
   ];
 
-  private async callWithFallback(messages: any[], tools: any[]): Promise<ModelResult> {
+  private async callGroqWithFallback(messages: any[], tools: any[]) {
     let lastError: any;
-    for (const provider of this.modelProviders) {
+    for (let i = 0; i < this.groqClients.length; i++) {
       try {
-        return await provider.call(messages, tools);
+        return await this.groqClients[i].chat.completions.create({
+          model: "llama-3.3-70b-versatile",
+          messages,
+          tools,
+          tool_choice: "auto",
+        });
       } catch (e: any) {
         lastError = e;
-        console.warn(`[ChatService] ${provider.name} failed:`, e.message);
+        if (e.status === 429) {
+          console.warn(`[ChatService] Groq key ${i + 1} rate limited, trying next...`);
+          continue;
+        }
+        throw e;
       }
     }
     throw lastError;
-  }
-
-  private async callGroq(messages: any[], tools: any[]): Promise<ModelResult> {
-    const response = await this.groq.chat.completions.create({
-      model: "llama-3.3-70b-versatile",
-      messages,
-      tools,
-      tool_choice: "auto",
-    });
-    const choice = response.choices?.[0];
-    const msg = choice?.message;
-    return {
-      content: msg?.content ?? null,
-      toolCalls: msg?.tool_calls?.map((tc) => ({
-        id: tc.id,
-        name: tc.function.name,
-        args: tc.function.arguments,
-      })) ?? null,
-    };
-  }
-
-  private async callGemini(messages: any[], tools: any[], googleAI: GoogleGenerativeAI, modelName: string): Promise<ModelResult> {
-    const { contents, systemInstruction } = this.toGeminiContents(messages);
-    const geminiTools = this.toGeminiTools(tools);
-
-    const model = googleAI.getGenerativeModel({
-      model: modelName,
-      systemInstruction,
-      tools: geminiTools,
-    });
-
-    const result = await model.generateContent({ contents });
-    const candidate = result.response.candidates?.[0];
-    if (!candidate) throw new Error("No response from Gemini");
-
-    return {
-      content: this.extractGeminiText(candidate),
-      toolCalls: this.extractGeminiToolCalls(candidate),
-    };
-  }
-
-  private toGeminiContents(messages: any[]): { contents: any[]; systemInstruction?: string } {
-    const contents: any[] = [];
-    let systemInstruction: string | undefined;
-
-    const callIdToFn = new Map<string, string>();
-    for (const msg of messages) {
-      if (msg.role === "assistant" && msg.tool_calls) {
-        for (const tc of msg.tool_calls) {
-          callIdToFn.set(tc.id, tc.function.name);
-        }
-      }
-    }
-
-    for (const msg of messages) {
-      if (msg.role === "system") {
-        systemInstruction = msg.content;
-        continue;
-      }
-      if (msg.role === "user" && typeof msg.content === "string") {
-        contents.push({ role: "user", parts: [{ text: msg.content }] });
-      } else if (msg.role === "assistant") {
-        const parts: any[] = [];
-        if (msg.content) parts.push({ text: msg.content });
-        if (msg.tool_calls) {
-          for (const tc of msg.tool_calls) {
-            parts.push({ functionCall: { name: tc.function.name, args: JSON.parse(tc.function.arguments) } });
-          }
-        }
-        contents.push({ role: "model", parts });
-      } else if (msg.role === "tool") {
-        const fnName = callIdToFn.get(msg.tool_call_id);
-        if (fnName) {
-          contents.push({
-            role: "user",
-            parts: [{ functionResponse: { name: fnName, response: JSON.parse(msg.content) } }],
-          });
-        }
-      }
-    }
-
-    return { contents, systemInstruction };
-  }
-
-  private toGeminiTools(tools: any[]): any[] {
-    return [{
-      functionDeclarations: tools.map((t: any) => t.function),
-    }];
-  }
-
-  private extractGeminiText(candidate: any): string | null {
-    const textPart = candidate.content.parts.find((p: any) => p.text);
-    return textPart?.text ?? null;
-  }
-
-  private extractGeminiToolCalls(candidate: any): ModelResult["toolCalls"] {
-    const functionCalls = candidate.content.parts.filter((p: any) => p.functionCall);
-    if (!functionCalls.length) return null;
-    return functionCalls.map((fc: any, i: number) => ({
-      id: `gemini-${i}`,
-      name: fc.functionCall.name,
-      args: JSON.stringify(fc.functionCall.args),
-    }));
-  }
-
-  private buildAssistantMessage(result: ModelResult): any {
-    const msg: any = { role: "assistant" };
-    if (result.content) msg.content = result.content;
-    if (result.toolCalls) {
-      msg.tool_calls = result.toolCalls.map((tc) => ({
-        id: tc.id,
-        type: "function",
-        function: { name: tc.name, arguments: tc.args },
-      }));
-    }
-    return msg;
   }
 
   async processMessage(message: string, userId: number): Promise<{
@@ -294,28 +167,22 @@ export class ChatService {
         {
           role: "system",
           content:
-            "Bạn là trợ lý đặt phòng của khách sạn DTUVIVI. " +
+            "Bạn là trợ lý đặt phòng của khách sạn DTUVIVU. " +
             "Nhiệm vụ của bạn là hỗ trợ khách hàng tìm phòng, xem thông tin dịch vụ và đặt phòng. " +
             "Luôn trả lời bằng tiếng Việt, thân thiện và chuyên nghiệp. " +
-            "Khi người dùng muốn đặt phòng, hãy thu thập đầy đủ thông tin: ngày check-in, ngày check-out, " +
-            "loại phòng (nếu có), số lượng khách, dịch vụ kèm theo. " +
+            "Khi khách hỏi tìm phòng, hãy gọi searchAvailableRooms ngay với thông tin khách đã cung cấp. " +
+            "Không hỏi thêm thông tin tiện nghi, dịch vụ hay combo trừ khi khách yêu cầu. " +
+            "Ví dụ: khách nói 'phòng dưới 2 triệu cho 2 người' → gọi searchAvailableRooms với capacity=2, maxPrice=2000000. " +
+            "Nếu khách chưa cung cấp ngày, hãy hỏi ngày check-in và check-out trước. " +
             "Khi khách yêu cầu đặt một phòng cụ thể, hãy hỏi ngày check-in và check-out trước " +
             "khi gọi proposeBooking. " +
+            "Khi khách yêu cầu đặt phòng bằng tên hoặc số phòng (VD: D101, Deluxe 201), " +
+            "hãy gọi thẳng proposeBooking với roomId là tên hoặc số phòng đó. " +
             "Sau khi proposeBooking trả về thành công, hãy thông báo phòng còn trống và tổng tiền dự kiến, " +
             "đồng thời hướng dẫn khách nhấn nút 'Đặt ngay' để xác nhận. " +
             "Chỉ proposeBooking để khách xác nhận, không tự ý tạo booking. " +
-            "Khi khách hỏi gợi ý combo/dịch vụ, hãy gọi searchPackages, xem kết quả trả về " +
-            "và tư vấn dựa trên nhu cầu của khách (số người, dịch vụ ăn uống/spa...). " +
-            "Khi khách muốn tìm phòng theo tiện nghi (ví dụ: view biển, hồ bơi...), hãy gọi searchAmenities trước " +
-            "để lấy ID tiện nghi, sau đó dùng amenityIds trong searchAvailableRooms. " +
-            "Lưu ý: Chỉ gửi các tham số roomTypeId, capacity, minPrice, maxPrice, amenityIds khi khách yêu cầu cụ thể. " +
-            "Không gửi giá trị 0 hoặc mặc định. " +
-            "QUAN TRỌNG - QUY TẮC VỀ NGÀY THÁNG: " +
-            "1. KHÔNG BAO GIỜ gọi searchAvailableRooms nếu chưa có ngày tháng cụ thể từ khách. " +
-            "2. Phải hỏi khách ngày check-in và check-out cụ thể (ví dụ: 'Anh/chị muốn nhận phòng ngày nào?') trước khi gọi hàm. " +
-            "3. KHÔNG BAO GIỜ dùng các giá trị như 'ngay', 'hom nay', 'hien tai' hoặc bất kỳ từ tiếng Việt nào làm giá trị cho tham số ngày tháng. " +
-            "4. Tham số checkIn và checkOut PHẢI là ngày tháng cụ thể theo định dạng YYYY-MM-DD (ví dụ: 2026-06-15). " +
-            "5. Nếu khách nói 'đặt ngay' hoặc 'đặt phòng' mà không cung cấp ngày cụ thể, hãy hỏi lại: 'Anh/chị vui lòng cho tôi biết ngày nhận phòng và ngày trả phòng cụ thể ạ?'.",
+            "Khi khách hỏi gợi ý combo/dịch vụ, hãy gọi searchPackages và tư vấn dựa trên nhu cầu. " +
+            "Không gửi giá trị 0 hoặc mặc định cho các tham số.",
         },
         { role: "user", content: message },
       ];
@@ -324,14 +191,17 @@ export class ChatService {
       let actionData: any;
       let redirectUrl: string | undefined;
 
-      let modelResult = await this.callWithFallback(messages, this.functions);
+      const response = await this.callGroqWithFallback(messages, this.functions);
 
-      while (modelResult.toolCalls?.length) {
-        const toolCall = modelResult.toolCalls[0];
-        const name = toolCall.name;
-        const args = JSON.parse(toolCall.args);
+      let choice = response.choices?.[0];
+      let msg = choice?.message;
 
-        messages.push(this.buildAssistantMessage(modelResult));
+      while (msg?.tool_calls?.length) {
+        const toolCall = msg.tool_calls[0];
+        const name = toolCall.function.name;
+        const args = JSON.parse(toolCall.function.arguments);
+
+        messages.push(msg);
 
         if (name === "proposeBooking") {
           const result = await this.proposeBooking(args, userId);
@@ -362,10 +232,13 @@ export class ChatService {
           });
         }
 
-        modelResult = await this.callWithFallback(messages, this.functions);
+        const nextResponse = await this.callGroqWithFallback(messages, this.functions);
+
+        choice = nextResponse.choices?.[0];
+        msg = choice?.message;
       }
 
-      const reply = modelResult.content || "Xin lỗi, tôi không hiểu yêu cầu của bạn.";
+      const reply = msg?.content || "Xin lỗi, tôi không hiểu yêu cầu của bạn.";
 
       await this.prisma.chatMessage.create({
         data: {
@@ -407,17 +280,12 @@ export class ChatService {
       console.error("ChatService error:", error);
       if (error.status === 429) {
         return {
-          reply: "⚠️ API Groq đã vượt quá giới hạn yêu cầu. Vui lòng thử lại sau 30 giây.",
+          reply: "⚠️ Hệ thống AI đã vượt quá giới hạn yêu cầu. Vui lòng thử lại sau 30 giây.",
         };
       }
       if (error.status === 401 || error.status === 403) {
         return {
-          reply: "⚠️ API key Groq không hợp lệ. Vui lòng kiểm tra lại GROQ_API_KEY.",
-        };
-      }
-      if (error.status === 400 && error.error?.code === "tool_use_failed") {
-        return {
-          reply: "Xin lỗi, tôi cần biết ngày tháng cụ thể để tìm phòng cho bạn. Vui lòng cho tôi biết ngày nhận phòng và ngày trả phòng (ví dụ: nhận phòng 15/06/2026, trả phòng 17/06/2026).",
+          reply: "⚠️ API key AI không hợp lệ. Vui lòng kiểm tra lại cấu hình.",
         };
       }
       return {
@@ -439,22 +307,13 @@ export class ChatService {
   private async executeFunction(name: string, args: any, userId: number) {
     switch (name) {
       case "searchAvailableRooms": {
-        if (!args.checkIn || !args.checkOut) {
-          return {
-            action: "error",
-            data: { message: "Vui lòng cung cấp ngày check-in và check-out cụ thể (định dạng YYYY-MM-DD)." },
-          };
-        }
-        const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
-        if (!dateRegex.test(args.checkIn) || !dateRegex.test(args.checkOut)) {
-          return {
-            action: "error",
-            data: { message: "Ngày tháng không hợp lệ. Vui lòng cung cấp ngày cụ thể theo định dạng YYYY-MM-DD (ví dụ: 2026-06-15)." },
-          };
-        }
+        const today = new Date();
+        const tomorrow = new Date(today);
+        tomorrow.setDate(tomorrow.getDate() + 1);
+
         const rooms = await this.roomsService.findAll({
-          checkIn: args.checkIn,
-          checkOut: args.checkOut,
+          checkIn: args.checkIn || today.toISOString().split("T")[0],
+          checkOut: args.checkOut || tomorrow.toISOString().split("T")[0],
           capacity: args.capacity,
           roomTypeId: args.roomTypeId,
           minPrice: args.minPrice,
@@ -543,13 +402,24 @@ export class ChatService {
   }
 
   private async proposeBooking(args: any, userId: number) {
-    const room = await this.roomsService.findById(args.roomId);
-    if (!room) throw new BadRequestException("Room not found");
+    const roomId = Number(args.roomId);
+    let room;
 
-    const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
-    if (!args.checkInDate || !args.checkOutDate || !dateRegex.test(args.checkInDate) || !dateRegex.test(args.checkOutDate)) {
-      throw new BadRequestException("Ngày tháng không hợp lệ. Vui lòng cung cấp ngày cụ thể theo định dạng YYYY-MM-DD.");
+    if (!isNaN(roomId)) {
+      room = await this.prisma.room.findUnique({ where: { id: roomId } });
+    } else {
+      const query = String(args.roomId);
+      room = await this.prisma.room.findFirst({
+        where: {
+          OR: [
+            { roomNumber: query },
+            { name: { contains: query } },
+          ],
+        },
+      });
     }
+
+    if (!room) throw new BadRequestException("Không tìm thấy phòng");
 
     const checkInDate = new Date(args.checkInDate);
     const checkOutDate = new Date(args.checkOutDate);
@@ -558,7 +428,7 @@ export class ChatService {
 
     const conflicting = await this.prisma.booking.findFirst({
       where: {
-        roomId: args.roomId,
+        roomId: room.id,
         status: { notIn: [BookingStatus.CANCELLED] },
         checkInDate: { lt: checkOutDate },
         checkOutDate: { gt: checkInDate },
@@ -573,7 +443,7 @@ export class ChatService {
     return {
       action: "booking_proposal",
       data: {
-        roomId: args.roomId,
+        roomId: room.id,
         roomName: room.name,
         checkInDate: args.checkInDate,
         checkOutDate: args.checkOutDate,
