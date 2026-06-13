@@ -26,21 +26,19 @@ mysql -u root -p -e "CREATE DATABASE IF NOT EXISTS dtuvivi;"
 
 ### Backend
 
-Dự án này dùng Resend (resend.com) để gửi email. Khi clone project về, để chức năng quên mật khẩu (và gửi email xác nhận đặt phòng) hoạt động, cần làm như sau:
-Cách lấy Resend API Key
-1. Vào https://resend.com → đăng ký tài khoản (miễn phí)
-2. Vào dashboard → API Keys → tạo key mới
-3. Copy key dạng re_xxx...
-Cấu hình
-Thêm vào file backend/.env:
-
-Copy `backend/.env.example` thành `backend/.env`:
+Copy `backend/.env.example` thành `backend/.env` và điền các giá trị:
 
 ```env
 DATABASE_URL="mysql://root:YOUR_MYSQL_PASSWORD@localhost:3306/dtuvivi"
-GROQ_API_KEY=gsk_...   # Lấy tại https://console.groq.com
-RESEND_API_KEY=re_xxx... #Tạo resen api key bằng gmail muốn đăng ký tài khoản
+GROQ_API_KEY="gsk_..."
+GOOGLE_API_KEY="AIzaSy..."
+RESEND_API_KEY="re_..."
 ```
+
+**Hướng dẫn lấy API Keys:**
+- **Groq API Key**: Truy cập [Groq Console](https://console.groq.com) -> Chọn **API Keys** -> click **Create API Key**.
+- **Google AI Studio Key**: Truy cập [Google AI Studio](https://aistudio.google.com) -> click **Get API key** -> click **Create API key**.
+- **Resend API Key**: Truy cập [Resend](https://resend.com) (miễn phí) -> Đăng ký/đăng nhập -> Chọn **API Keys** -> click **Create API Key** (key có dạng `re_...`).
 
 Nếu để trống `JWT_SECRET`, code sẽ tự dùng `"secret"` — vẫn chạy được nhưng kém bảo mật.
 
