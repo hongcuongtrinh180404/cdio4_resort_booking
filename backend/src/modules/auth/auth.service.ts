@@ -41,6 +41,8 @@ export class AuthService {
     const user = await this.usersService.findByEmail(dto.email);
     if (!user) throw new UnauthorizedException("Invalid credentials");
 
+    if (user.status === "LOCKED") throw new UnauthorizedException("Tài khoản đã bị khóa");
+
     const isMatch = await bcrypt.compare(dto.password, user.password);
     if (!isMatch) throw new UnauthorizedException("Invalid credentials");
 

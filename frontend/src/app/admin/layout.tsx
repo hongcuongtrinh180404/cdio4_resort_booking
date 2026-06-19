@@ -7,15 +7,22 @@ import { removeToken, getUser } from "@/lib/auth";
 import type { JwtPayload } from "@/lib/auth";
 import { Icon } from "@iconify/react";
 
-const SIDEBAR_LINKS = [
-  { href: "/admin/dashboard", label: "Dashboard", icon: "dashboard" },
-  { href: "/admin/bookings", label: "Quản lý booking", icon: "receipt-long" },
-  { href: "/admin/rooms", label: "Quản lý phòng", icon: "meeting-room" },
-  { href: "/admin/services", label: "Dịch vụ", icon: "spa" },
-  { href: "/admin/service-combos", label: "Combo", icon: "diamond" },
-  { href: "/admin/reports", label: "Báo cáo doanh thu", icon: "finance" },
-  { href: "/admin/users", label: "Quản lý người dùng", icon: "people" },
-];
+function getSidebarLinks(role?: string) {
+  const links = [
+    { href: "/admin/dashboard", label: "Dashboard", icon: "dashboard" },
+    { href: "/admin/bookings", label: "Quản lý booking", icon: "receipt-long" },
+    { href: "/admin/rooms", label: "Quản lý phòng", icon: "meeting-room" },
+    { href: "/admin/services", label: "Dịch vụ", icon: "spa" },
+    { href: "/admin/service-combos", label: "Combo", icon: "diamond" },
+    { href: "/admin/reports", label: "Báo cáo doanh thu", icon: "finance" },
+  ];
+  if (role === "EMPLOYEE") {
+    links.push({ href: "/admin/users", label: "Hỗ trợ khách hàng", icon: "headset-mic" });
+  } else {
+    links.push({ href: "/admin/users", label: "Quản lý người dùng", icon: "manage-accounts" });
+  }
+  return links;
+}
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -66,7 +73,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
           {/* Nav Links */}
           <nav className="flex-1 py-4 space-y-1 px-3">
-            {SIDEBAR_LINKS.map((link) => {
+            {getSidebarLinks(user?.role).map((link) => {
               const active = pathname.startsWith(link.href);
               return (
                 <Link

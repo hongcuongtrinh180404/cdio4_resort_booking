@@ -13,6 +13,7 @@ interface User {
   fullName: string;
   phone: string | null;
   role: string;
+  status: string;
   createdAt: string;
   _count: { bookings: number };
 }
@@ -22,6 +23,22 @@ interface Conversation {
   userId: number;
   hasUnread: boolean;
 }
+
+const ROLE_LABEL: Record<string, string> = {
+  GUEST: "Khách hàng",
+  EMPLOYEE: "Nhân viên",
+  ADMIN: "Quản trị viên",
+};
+
+const STATUS_LABEL: Record<string, string> = {
+  ACTIVE: "Hoạt động",
+  LOCKED: "Khóa",
+};
+
+const STATUS_COLOR: Record<string, string> = {
+  ACTIVE: "bg-green-100 text-green-800",
+  LOCKED: "bg-red-100 text-red-800",
+};
 
 function Toast({ msg, type, onClose }: { msg: string; type: "success" | "error"; onClose: () => void }) {
   useEffect(() => { const t = setTimeout(onClose, 3000); return () => clearTimeout(t); }, [onClose]);
@@ -35,17 +52,134 @@ function Toast({ msg, type, onClose }: { msg: string; type: "success" | "error";
   );
 }
 
-const ROLE_LABEL: Record<string, string> = {
-  GUEST: "Khách",
-  EMPLOYEE: "Nhân viên",
-  ADMIN: "Quản trị viên",
-};
+function ConfirmDialog({ message, onConfirm, onCancel }: { message: string; onConfirm: () => void; onCancel: () => void }) {
+  return (
+    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/30" onClick={onCancel}>
+      <div className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-2xl" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center gap-3 mb-4">
+          <Icon icon="material-symbols:help-outline" className="text-3xl text-primary" />
+          <h3 className="font-headline-sm font-bold text-on-surface">Xác nhận</h3>
+        </div>
+        <p className="text-body-md text-on-surface-variant mb-6">{message}</p>
+        <div className="flex gap-3">
+          <button onClick={onCancel} className="flex-1 h-10 rounded-full border border-outline/40 text-body-sm font-semibold hover:bg-gray-50 transition-colors">Huỷ</button>
+          <button onClick={onConfirm} className="flex-1 h-10 rounded-full bg-primary text-on-primary text-body-sm font-semibold hover:bg-primary/90 transition-all active:scale-95">Xác nhận</button>
+        </div>
+      </div>
+    </div>
+  );
+}
 
-const ROLE_COLOR: Record<string, string> = {
-  GUEST: "bg-blue-100 text-blue-800",
-  EMPLOYEE: "bg-purple-100 text-purple-800",
-  ADMIN: "bg-red-100 text-red-800",
-};
+function EditUserModal({ user, onClose, onSaved }: { user: User; onClose: () => void; onSaved: () => void }) {
+  const [form, setForm] = useState({
+    fullName: user.fullName,
+    email: user.email,
+    phone: user.phone ?? "",
+    role: user.role,
+    status: user.status,
+    newPassword: "",
+    confirmPassword: "",
+  });
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+  const [showConfirm, setShowConfirm] = useState(false);
+
+  const handleSave = async () => {
+    if (form.newPassword && form.newPassword !== form.confirmPassword) {
+      setError("Mật khẩu xác nhận không khớp");
+      return;
+    }
+    setShowConfirm(true);
+  };
+
+  const doSave = async () => {
+    setShowConfirm(false);
+    setSaving(true);
+    setError("");
+    try {
+      const body: any = {
+        fullName: form.fullName,
+        email: form.email,
+        phone: form.phone || null,
+        role: form.role,
+        status: form.status,
+      };
+      if (form.newPassword) body.newPassword = form.newPassword;
+      await patch(`/admin/users/${user.id}`, body);
+      onSaved();
+      onClose();
+    } catch (e: any) {
+      setError(e.body?.message?.[0] || e.body?.message || "Có lỗi xảy ra");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <>
+      {showConfirm && (
+        <ConfirmDialog
+          message="Bạn có muốn lưu thay đổi không?"
+          onConfirm={doSave}
+          onCancel={() => setShowConfirm(false)}
+        />
+      )}
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30" onClick={onClose}>
+        <div className="bg-white rounded-2xl p-6 w-full max-w-lg shadow-2xl max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+          <h3 className="font-headline-sm font-bold text-on-surface mb-5">Thông tin người dùng</h3>
+          {error && <p className="text-red-600 text-sm mb-3">{error}</p>}
+
+          <div className="space-y-4">
+            <div>
+              <label className="text-body-xs font-semibold text-on-surface-variant block mb-1">Họ tên</label>
+              <input value={form.fullName} onChange={(e) => setForm({ ...form, fullName: e.target.value })} className="w-full h-10 px-3 rounded-lg border border-outline/40 text-body-sm focus:ring-2 focus:ring-primary/30 focus:border-primary outline-none" />
+            </div>
+            <div>
+              <label className="text-body-xs font-semibold text-on-surface-variant block mb-1">Email</label>
+              <input value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} className="w-full h-10 px-3 rounded-lg border border-outline/40 text-body-sm focus:ring-2 focus:ring-primary/30 focus:border-primary outline-none" />
+            </div>
+            <div>
+              <label className="text-body-xs font-semibold text-on-surface-variant block mb-1">Số điện thoại</label>
+              <input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} className="w-full h-10 px-3 rounded-lg border border-outline/40 text-body-sm focus:ring-2 focus:ring-primary/30 focus:border-primary outline-none" />
+            </div>
+            <div>
+              <label className="text-body-xs font-semibold text-on-surface-variant block mb-1">Vai trò</label>
+              <select value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value })} className="w-full h-10 px-3 rounded-lg border border-outline/40 text-body-sm focus:ring-2 focus:ring-primary/30 focus:border-primary outline-none bg-white">
+                <option value="GUEST">Khách hàng</option>
+                <option value="EMPLOYEE">Nhân viên</option>
+                <option value="ADMIN">Quản trị viên</option>
+              </select>
+            </div>
+            <div>
+              <label className="text-body-xs font-semibold text-on-surface-variant block mb-1">Trạng thái</label>
+              <select value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })} className="w-full h-10 px-3 rounded-lg border border-outline/40 text-body-sm focus:ring-2 focus:ring-primary/30 focus:border-primary outline-none bg-white">
+                <option value="ACTIVE">Hoạt động</option>
+                <option value="LOCKED">Khóa</option>
+              </select>
+            </div>
+
+            <hr className="border-outline/40" />
+
+            <div>
+              <p className="font-semibold text-body-sm text-on-surface mb-3">Đặt lại mật khẩu</p>
+              <div className="space-y-3">
+                <input type="password" placeholder="Mật khẩu mới" value={form.newPassword} onChange={(e) => setForm({ ...form, newPassword: e.target.value })} className="w-full h-10 px-3 rounded-lg border border-outline/40 text-body-sm focus:ring-2 focus:ring-primary/30 focus:border-primary outline-none" />
+                <input type="password" placeholder="Xác nhận mật khẩu" value={form.confirmPassword} onChange={(e) => setForm({ ...form, confirmPassword: e.target.value })} className="w-full h-10 px-3 rounded-lg border border-outline/40 text-body-sm focus:ring-2 focus:ring-primary/30 focus:border-primary outline-none" />
+              </div>
+            </div>
+          </div>
+
+          <div className="flex gap-3 mt-6">
+            <button onClick={onClose} className="flex-1 h-10 rounded-full border border-outline/40 text-body-sm font-semibold hover:bg-gray-50 transition-colors">Huỷ</button>
+            <button onClick={handleSave} disabled={saving} className="flex-1 h-10 rounded-full bg-primary text-on-primary text-body-sm font-semibold hover:bg-primary/90 transition-all active:scale-95 disabled:opacity-50">
+              {saving ? "Đang lưu..." : "Lưu thay đổi"}
+            </button>
+          </div>
+        </div>
+      </div>
+    </>
+  );
+}
 
 function CreateUserModal({ onClose, onCreated }: { onClose: () => void; onCreated: () => void }) {
   const [form, setForm] = useState({ email: "", password: "", fullName: "", phone: "", role: "GUEST" });
@@ -78,7 +212,7 @@ function CreateUserModal({ onClose, onCreated }: { onClose: () => void; onCreate
           <input type="password" placeholder="Mật khẩu *" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} className="w-full h-10 px-3 rounded-lg border border-outline/40 text-body-sm focus:ring-2 focus:ring-primary/30 focus:border-primary outline-none" />
           <input placeholder="Số điện thoại" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} className="w-full h-10 px-3 rounded-lg border border-outline/40 text-body-sm focus:ring-2 focus:ring-primary/30 focus:border-primary outline-none" />
           <select value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value })} className="w-full h-10 px-3 rounded-lg border border-outline/40 text-body-sm focus:ring-2 focus:ring-primary/30 focus:border-primary outline-none bg-white">
-            <option value="GUEST">Khách</option>
+            <option value="GUEST">Khách hàng</option>
             <option value="EMPLOYEE">Nhân viên</option>
             <option value="ADMIN">Quản trị viên</option>
           </select>
@@ -87,47 +221,6 @@ function CreateUserModal({ onClose, onCreated }: { onClose: () => void; onCreate
           <button onClick={onClose} className="flex-1 h-10 rounded-full border border-outline/40 text-body-sm font-semibold hover:bg-gray-50 transition-colors">Huỷ</button>
           <button onClick={handleSubmit} disabled={saving} className="flex-1 h-10 rounded-full bg-primary text-on-primary text-body-sm font-semibold hover:bg-primary/90 transition-all active:scale-95 disabled:opacity-50">
             {saving ? "Đang tạo..." : "Tạo"}
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function RoleModal({ userId, currentRole, onClose, onUpdated }: { userId: number; currentRole: string; onClose: () => void; onUpdated: () => void }) {
-  const [role, setRole] = useState(currentRole);
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState("");
-
-  const handleSave = async () => {
-    if (role === currentRole) { onClose(); return; }
-    setSaving(true);
-    setError("");
-    try {
-      await patch(`/admin/users/${userId}/role`, { role });
-      onUpdated();
-      onClose();
-    } catch (e: any) {
-      setError(e.body?.message?.[0] || e.body?.message || "Có lỗi xảy ra");
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30" onClick={onClose}>
-      <div className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-2xl" onClick={(e) => e.stopPropagation()}>
-        <h3 className="font-headline-sm font-bold text-on-surface mb-4">Phân quyền tài khoản</h3>
-        {error && <p className="text-red-600 text-sm mb-3">{error}</p>}
-        <select value={role} onChange={(e) => setRole(e.target.value)} className="w-full h-10 px-3 rounded-lg border border-outline/40 text-body-sm focus:ring-2 focus:ring-primary/30 focus:border-primary outline-none bg-white">
-          <option value="GUEST">Khách</option>
-          <option value="EMPLOYEE">Nhân viên</option>
-          <option value="ADMIN">Quản trị viên</option>
-        </select>
-        <div className="flex gap-3 mt-5">
-          <button onClick={onClose} className="flex-1 h-10 rounded-full border border-outline/40 text-body-sm font-semibold hover:bg-gray-50 transition-colors">Huỷ</button>
-          <button onClick={handleSave} disabled={saving} className="flex-1 h-10 rounded-full bg-primary text-on-primary text-body-sm font-semibold hover:bg-primary/90 transition-all active:scale-95 disabled:opacity-50">
-            {saving ? "Đang lưu..." : "Lưu"}
           </button>
         </div>
       </div>
@@ -146,7 +239,7 @@ export default function AdminUsersPage() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [chatTarget, setChatTarget] = useState<{ id: number; name: string } | null>(null);
   const [showCreate, setShowCreate] = useState(false);
-  const [roleTarget, setRoleTarget] = useState<{ id: number; role: string } | null>(null);
+  const [editTarget, setEditTarget] = useState<User | null>(null);
 
   const fetchUsers = useCallback(async () => {
     setLoading(true);
@@ -195,8 +288,8 @@ export default function AdminUsersPage() {
         <CreateUserModal onClose={() => setShowCreate(false)} onCreated={() => { setToast({ msg: "Tạo người dùng thành công", type: "success" }); fetchUsers(); }} />
       )}
 
-      {roleTarget && (
-        <RoleModal userId={roleTarget.id} currentRole={roleTarget.role} onClose={() => setRoleTarget(null)} onUpdated={() => { setToast({ msg: "Cập nhật quyền thành công", type: "success" }); fetchUsers(); }} />
+      {editTarget && (
+        <EditUserModal user={editTarget} onClose={() => setEditTarget(null)} onSaved={() => { setToast({ msg: "Cập nhật thông tin thành công", type: "success" }); fetchUsers(); }} />
       )}
 
       <div className="mb-6 flex items-center justify-between">
@@ -229,7 +322,7 @@ export default function AdminUsersPage() {
                     <th className="p-4 font-bold">Họ tên</th>
                     <th className="p-4 font-bold">Email</th>
                     <th className="p-4 font-bold">Số điện thoại</th>
-                    <th className="p-4 font-bold text-center">Vai trò</th>
+                    {isAdmin && <th className="p-4 font-bold text-center">Thao tác</th>}
                     <th className="p-4 font-bold text-center">Số booking</th>
                     <th className="p-4 font-bold">Ngày đăng ký</th>
                     <th className="p-4 font-bold text-center">Tin nhắn</th>
@@ -241,20 +334,22 @@ export default function AdminUsersPage() {
                       <td className="p-4 font-medium text-on-surface">{u.fullName}</td>
                       <td className="p-4">{u.email}</td>
                       <td className="p-4">{u.phone ?? "—"}</td>
-                      <td className="p-4 text-center">
-                        {isAdmin ? (
-                          <button
-                            onClick={() => setRoleTarget({ id: u.id, role: u.role })}
-                            className={`text-label-caps px-3 py-1 rounded-full cursor-pointer hover:opacity-80 transition-opacity ${ROLE_COLOR[u.role] || "bg-gray-100 text-gray-800"}`}
-                          >
-                            {ROLE_LABEL[u.role] || u.role}
-                          </button>
-                        ) : (
-                          <span className={`text-label-caps px-3 py-1 rounded-full ${ROLE_COLOR[u.role] || "bg-gray-100 text-gray-800"}`}>
-                            {ROLE_LABEL[u.role] || u.role}
-                          </span>
-                        )}
-                      </td>
+                      {isAdmin && (
+                        <td className="p-4 text-center">
+                          <div className="flex items-center justify-center gap-2">
+                            <button
+                              onClick={() => setEditTarget(u)}
+                              className="p-2 rounded-full hover:bg-primary/10 transition-colors text-primary"
+                              title="Sửa thông tin"
+                            >
+                              <Icon icon="material-symbols:edit" className="text-lg" />
+                            </button>
+                            <span className={`text-label-caps px-3 py-1 rounded-full ${STATUS_COLOR[u.status] || "bg-gray-100 text-gray-800"}`}>
+                              {STATUS_LABEL[u.status] || u.status}
+                            </span>
+                          </div>
+                        </td>
+                      )}
                       <td className="p-4 text-center font-medium">{u._count.bookings}</td>
                       <td className="p-4">{new Date(u.createdAt).toLocaleDateString("vi-VN")}</td>
                       <td className="p-4 text-center">

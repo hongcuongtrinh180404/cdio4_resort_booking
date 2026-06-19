@@ -13,6 +13,7 @@ import { WishlistModule } from "./modules/wishlist/wishlist.module";
 import { AdminModule } from "./modules/admin/admin.module";
 import { ChatModule } from "./modules/chat/chat.module";
 import { AdminChatModule } from "./modules/admin-chat/admin-chat.module";
+import { ApiKeyModule } from "./modules/api-key/api-key.module";
 
 @Module({
   imports: [
@@ -30,6 +31,7 @@ import { AdminChatModule } from "./modules/admin-chat/admin-chat.module";
     AdminModule,
     ChatModule,
     AdminChatModule,
+    ApiKeyModule,
   ],
 })
 export class AppModule {}

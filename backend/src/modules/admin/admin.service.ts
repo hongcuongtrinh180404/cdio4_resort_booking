@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, BadRequestException } from "@nestjs/common";
+import { Injectable, NotFoundException, BadRequestException, ConflictException } from "@nestjs/common";
 import { PrismaService } from "../../database/prisma/prisma.service";
 import * as bcrypt from "bcryptjs";
 
@@ -84,6 +84,7 @@ export class AdminService {
           fullName: true,
           phone: true,
           role: true,
+          status: true,
           createdAt: true,
           _count: { select: { bookings: true } },
         },
@@ -127,14 +128,27 @@ export class AdminService {
     return user;
   }
 
-  async updateUserRole(id: number, role: "GUEST" | "EMPLOYEE" | "ADMIN") {
+  async updateUser(id: number, dto: { fullName?: string; email?: string; phone?: string; role?: "GUEST" | "EMPLOYEE" | "ADMIN"; status?: "ACTIVE" | "LOCKED"; newPassword?: string }) {
     const user = await this.prisma.user.findUnique({ where: { id } });
     if (!user) throw new NotFoundException("User not found");
 
+    if (dto.email && dto.email !== user.email) {
+      const existing = await this.prisma.user.findUnique({ where: { email: dto.email } });
+      if (existing) throw new ConflictException("Email already in use");
+    }
+
+    const data: any = {};
+    if (dto.fullName !== undefined) data.fullName = dto.fullName;
+    if (dto.email !== undefined) data.email = dto.email;
+    if (dto.phone !== undefined) data.phone = dto.phone;
+    if (dto.role !== undefined) data.role = dto.role;
+    if (dto.status !== undefined) data.status = dto.status;
+    if (dto.newPassword) data.password = await bcrypt.hash(dto.newPassword, 10);
+
     return this.prisma.user.update({
       where: { id },
-      data: { role },
-      select: { id: true, email: true, fullName: true, phone: true, role: true, createdAt: true },
+      data,
+      select: { id: true, email: true, fullName: true, phone: true, role: true, status: true, createdAt: true },
     });
   }
 }

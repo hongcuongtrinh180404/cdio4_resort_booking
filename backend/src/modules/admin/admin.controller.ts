@@ -4,7 +4,7 @@ import { AdminService } from "./admin.service";
 import { JwtAuthGuard } from "../../common/guards/jwt-auth.guard";
 import { RolesGuard } from "../../common/guards/roles.guard";
 import { Roles } from "../../common/decorators/roles.decorator";
-import { Role } from "../../common/enums";
+import { Role, UserStatus } from "../../common/enums";
 import { PaginationDto } from "../../common/dto/pagination.dto";
 import { IsEmail, IsString, MinLength, IsOptional, IsEnum } from "class-validator";
 
@@ -28,9 +28,31 @@ class CreateUserByAdminDto {
   role?: "GUEST" | "EMPLOYEE" | "ADMIN";
 }
 
-class UpdateRoleDto {
+class UpdateUserDto {
+  @IsOptional()
+  @IsString()
+  fullName?: string;
+
+  @IsOptional()
+  @IsEmail()
+  email?: string;
+
+  @IsOptional()
+  @IsString()
+  phone?: string;
+
+  @IsOptional()
   @IsEnum(["GUEST", "EMPLOYEE", "ADMIN"])
-  role: "GUEST" | "EMPLOYEE" | "ADMIN";
+  role?: "GUEST" | "EMPLOYEE" | "ADMIN";
+
+  @IsOptional()
+  @IsEnum(["ACTIVE", "LOCKED"])
+  status?: "ACTIVE" | "LOCKED";
+
+  @IsOptional()
+  @IsString()
+  @MinLength(6)
+  newPassword?: string;
 }
 
 @ApiTags("admin")
@@ -77,10 +99,10 @@ export class AdminController {
     return this.adminService.createUser(dto);
   }
 
-  @Patch("users/:id/role")
-  @ApiOperation({ summary: "Update user role — ADMIN only" })
+  @Patch("users/:id")
+  @ApiOperation({ summary: "Update user info, role, status or password — ADMIN only" })
   @Roles(Role.ADMIN)
-  updateUserRole(@Param("id") id: string, @Body() dto: UpdateRoleDto) {
-    return this.adminService.updateUserRole(Number(id), dto.role);
+  updateUser(@Param("id") id: string, @Body() dto: UpdateUserDto) {
+    return this.adminService.updateUser(Number(id), dto);
   }
 }

@@ -8,17 +8,18 @@ datasource db {
 }
 
 model User {
-  id              Int       @id @default(autoincrement())
-  email           String    @unique
+  id              Int        @id @default(autoincrement())
+  email           String     @unique
   password        String
   fullName        String
   phone           String?
   address         String?
-  role            UserRole  @default(GUEST)
+  role            UserRole   @default(GUEST)
+  status          UserStatus @default(ACTIVE)
   resetCode       String?
   resetCodeExpires DateTime?
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
 
   bookings Booking[]
   wishlist Wishlist[]
@@ -228,6 +229,11 @@ enum UserRole {
   ADMIN
 }
 
+enum UserStatus {
+  ACTIVE
+  LOCKED
+}
+
 enum RoomStatus {
   AVAILABLE
   OCCUPIED
@@ -241,6 +247,25 @@ enum BookingStatus {
   CHECKED_IN
   CHECKED_OUT
   CANCELLED
+}
+
+model ApiKey {
+  id            Int          @id @default(autoincrement())
+  provider      String
+  key           String       @unique
+  label         String?
+  status        ApiKeyStatus @default(ACTIVE)
+  rateLimitedAt DateTime?
+  resetAt       DateTime?
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  @@index([provider, status])
+}
+
+enum ApiKeyStatus {
+  ACTIVE
+  RATE_LIMITED
 }
 
 enum PaymentStatus {

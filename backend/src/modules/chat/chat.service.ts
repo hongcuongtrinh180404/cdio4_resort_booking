@@ -1,5 +1,4 @@
 import { Injectable, BadRequestException } from "@nestjs/common";
-import { ConfigService } from "@nestjs/config";
 import Groq from "groq-sdk";
 import { PrismaService } from "../../database/prisma/prisma.service";
 import { ChatGateway } from "./chat.gateway";
@@ -7,31 +6,21 @@ import { RoomsService } from "../rooms/rooms.service";
 import { ServicesService } from "../services/services.service";
 import { ServiceCombosService } from "../service-combos/service-combos.service";
 import { BookingsService } from "../bookings/bookings.service";
+import { ApiKeyService } from "../api-key/api-key.service";
 import { ConfirmBookingDto } from "./dto/chat.dto";
 import { BookingStatus } from "../../common/enums/booking-status.enum";
 
 @Injectable()
 export class ChatService {
-  private groqClients: Groq[];
-
   constructor(
-    private configService: ConfigService,
     private prisma: PrismaService,
     private chatGateway: ChatGateway,
     private roomsService: RoomsService,
     private servicesService: ServicesService,
     private serviceCombosService: ServiceCombosService,
     private bookingsService: BookingsService,
-  ) {
-    const keys = [
-      this.configService.get<string>("GROQ_API_KEY"),
-      this.configService.get<string>("GROQ_API_KEY_2"),
-      this.configService.get<string>("GROQ_API_KEY_3"),
-    ].filter((k): k is string => !!k);
-
-    if (keys.length === 0) throw new Error("No GROQ_API_KEY configured");
-    this.groqClients = keys.map((key) => new Groq({ apiKey: key }));
-  }
+    private apiKeyService: ApiKeyService,
+  ) { }
 
   private functions = [
     {
@@ -111,10 +100,14 @@ export class ChatService {
   ];
 
   private async callGroqWithFallback(messages: any[], tools: any[]) {
+    const keys = await this.apiKeyService.getAvailableKeys("groq");
+    if (keys.length === 0) throw new Error("No available Groq API keys");
+
     let lastError: any;
-    for (let i = 0; i < this.groqClients.length; i++) {
+    for (const entry of keys) {
       try {
-        return await this.groqClients[i].chat.completions.create({
+        const client = new Groq({ apiKey: entry.key });
+        return await client.chat.completions.create({
           model: "llama-3.3-70b-versatile",
           messages,
           tools,
@@ -123,7 +116,8 @@ export class ChatService {
       } catch (e: any) {
         lastError = e;
         if (e.status === 429) {
-          console.warn(`[ChatService] Groq key ${i + 1} rate limited, trying next...`);
+          console.warn(`[ChatService] Groq key ${entry.label || entry.id} rate limited`);
+          await this.apiKeyService.markRateLimited(entry.id);
           continue;
         }
         throw e;
@@ -148,12 +142,6 @@ export class ChatService {
           data: { userId },
         });
       }
-
-      const previousMessages = await this.prisma.chatMessage.findMany({
-        where: { conversationId: conversation.id, role: "user" },
-        orderBy: { createdAt: "desc" },
-        take: 6,
-      });
 
       await this.prisma.chatMessage.create({
         data: {
@@ -189,10 +177,6 @@ export class ChatService {
             "Khi khách hỏi gợi ý combo/dịch vụ, hãy gọi searchPackages và tư vấn dựa trên nhu cầu. " +
             "Không gửi giá trị 0 hoặc mặc định cho các tham số.",
         },
-        ...previousMessages.reverse().map((m) => ({
-          role: m.role as "user" | "assistant",
-          content: m.content,
-        })),
         { role: "user", content: message },
       ];
 
@@ -239,7 +223,7 @@ export class ChatService {
           actionData = result.data;
           messages.push({
             role: "tool",
-            content: JSON.stringify(result.data),
+            content: JSON.stringify(result.toolResult ?? result.data),
             tool_call_id: toolCall.id,
           });
         }
@@ -332,8 +316,15 @@ export class ChatService {
           maxPrice: args.maxPrice,
           amenityIds: args.amenityIds,
         });
+        const roomIds = rooms.map((r) => r.id);
         return {
           action: "rooms",
+          toolResult: rooms.map((r) => ({
+            id: r.id,
+            name: r.name,
+            pricePerNight: Number(r.pricePerNight),
+            roomType: r.roomType?.name,
+          })),
           data: rooms.map((r) => ({
             id: r.id,
             name: r.name,
@@ -372,6 +363,20 @@ export class ChatService {
         const combos = await this.serviceCombosService.findAll();
         return {
           action: "packages",
+          toolResult: {
+            services: services.map((s) => ({
+              id: s.id,
+              name: s.name,
+              description: s.description,
+              price: Number(s.price),
+            })),
+            combos: combos.map((c) => ({
+              id: c.id,
+              name: c.name,
+              description: c.description,
+              comboPrice: Number(c.comboPrice),
+            })),
+          },
           data: {
             services: services.map((s) => ({
               id: s.id,
