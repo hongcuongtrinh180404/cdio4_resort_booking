@@ -7,29 +7,25 @@ export class ApiKeyService implements OnModuleInit {
   constructor(
     private prisma: PrismaService,
     private configService: ConfigService,
-  ) {}
+  ) { }
 
   async onModuleInit() {
     await this.resetExpiredKeys();
     await this.seedFromEnv();
   }
 
-  async getAvailableKeys(provider: string) {
+  async getAvailableKeys() {
     await this.resetExpiredKeys();
     return this.prisma.apiKey.findMany({
-      where: { provider, status: "ACTIVE" },
+      where: { status: "ACTIVE" },
     });
   }
 
   async markRateLimited(id: number) {
-    const resetAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
+    const resetAt = new Date(Date.now() + 30 * 60 * 1000);
     await this.prisma.apiKey.update({
       where: { id },
-      data: {
-        status: "RATE_LIMITED",
-        rateLimitedAt: new Date(),
-        resetAt,
-      },
+      data: { status: "RATE_LIMITED", resetAt },
     });
   }
 
@@ -39,27 +35,21 @@ export class ApiKeyService implements OnModuleInit {
         status: "RATE_LIMITED",
         resetAt: { lte: new Date() },
       },
-      data: {
-        status: "ACTIVE",
-        rateLimitedAt: null,
-        resetAt: null,
-      },
+      data: { status: "ACTIVE", resetAt: null },
     });
   }
 
   private async seedFromEnv() {
     const envKeys = [
-      { key: this.configService.get<string>("GROQ_API_KEY"), label: "main" },
-      { key: this.configService.get<string>("GROQ_API_KEY_2"), label: "backup 1" },
-      { key: this.configService.get<string>("GROQ_API_KEY_3"), label: "backup 2" },
-    ].filter((k): k is { key: string; label: string } => !!k.key);
+      this.configService.get<string>("GROQ_API_KEY"),
+      this.configService.get<string>("GROQ_API_KEY_2"),
+      this.configService.get<string>("GROQ_API_KEY_3"),
+    ].filter((k): k is string => !!k);
 
-    for (const { key, label } of envKeys) {
+    for (const key of envKeys) {
       const exists = await this.prisma.apiKey.findUnique({ where: { key } });
       if (!exists) {
-        await this.prisma.apiKey.create({
-          data: { provider: "groq", key, label },
-        });
+        await this.prisma.apiKey.create({ data: { key } });
       }
     }
   }

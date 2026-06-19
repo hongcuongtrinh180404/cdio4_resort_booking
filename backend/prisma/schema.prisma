@@ -250,17 +250,12 @@ enum BookingStatus {
 }
 
 model ApiKey {
-  id            Int          @id @default(autoincrement())
-  provider      String
-  key           String       @unique
-  label         String?
-  status        ApiKeyStatus @default(ACTIVE)
-  rateLimitedAt DateTime?
-  resetAt       DateTime?
-  createdAt     DateTime     @default(now())
-  updatedAt     DateTime     @updatedAt
+  id      Int          @id @default(autoincrement())
+  key     String       @unique
+  status  ApiKeyStatus @default(ACTIVE)
+  resetAt DateTime?
 
-  @@index([provider, status])
+  @@index([status])
 }
 
 enum ApiKeyStatus {

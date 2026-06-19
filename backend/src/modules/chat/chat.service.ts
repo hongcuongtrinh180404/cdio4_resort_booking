@@ -100,7 +100,7 @@ export class ChatService {
   ];
 
   private async callGroqWithFallback(messages: any[], tools: any[]) {
-    const keys = await this.apiKeyService.getAvailableKeys("groq");
+    const keys = await this.apiKeyService.getAvailableKeys();
     if (keys.length === 0) throw new Error("No available Groq API keys");
 
     let lastError: any;
@@ -116,7 +116,7 @@ export class ChatService {
       } catch (e: any) {
         lastError = e;
         if (e.status === 429) {
-          console.warn(`[ChatService] Groq key ${entry.label || entry.id} rate limited`);
+          console.warn(`[ChatService] Groq key ${entry.id} rate limited`);
           await this.apiKeyService.markRateLimited(entry.id);
           continue;
         }
