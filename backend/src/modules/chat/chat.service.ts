@@ -99,7 +99,14 @@ export class ChatService {
     },
   ];
 
-  private async callGroqWithFallback(messages: any[], tools: any[]) {
+  private async callGroqWithFallback(messages: any[], tools: any[], retryCount = 0) {
+    const models = [
+      "llama-3.3-70b-versatile",
+      "llama3-70b-8192",
+      "mixtral-8x7b-32768",
+    ];
+    const model = models[Math.min(retryCount, models.length - 1)];
+
     const keys = await this.apiKeyService.getAvailableKeys();
     if (keys.length === 0) throw new Error("No available Groq API keys");
 
@@ -108,7 +115,7 @@ export class ChatService {
       try {
         const client = new Groq({ apiKey: entry.key });
         return await client.chat.completions.create({
-          model: "llama-3.3-70b-versatile",
+          model,
           messages,
           tools,
           tool_choice: "auto",
@@ -119,6 +126,13 @@ export class ChatService {
           console.warn(`[ChatService] Groq key ${entry.id} rate limited`);
           await this.apiKeyService.markRateLimited(entry.id);
           continue;
+        }
+        if (e.status === 400 && retryCount < 2) {
+          const body = e.error as any;
+          if (body?.error?.code === "tool_use_failed") {
+            console.warn(`[ChatService] Tool use failed with model "${model}", retrying with fallback model (attempt ${retryCount + 1})`);
+            return this.callGroqWithFallback(messages, tools, retryCount + 1);
+          }
         }
         throw e;
       }
