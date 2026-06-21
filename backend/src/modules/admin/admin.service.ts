@@ -19,7 +19,7 @@ export class AdminService {
       this.prisma.user.count(),
       this.prisma.booking.count({ where: { status: "PENDING" } }),
       this.prisma.payment.aggregate({
-        where: { status: "SUCCESS" },
+        where: { status: { in: ["PAID", "SUCCESS"] } },
         _sum: { amount: true },
       }),
     ]);
@@ -37,7 +37,7 @@ export class AdminService {
     const skip = (page - 1) * limit;
     const [data, total] = await Promise.all([
       this.prisma.payment.findMany({
-        where: { status: "SUCCESS" },
+        where: { status: { in: ["PAID", "SUCCESS"] } },
         skip,
         take: limit,
         include: {
@@ -47,7 +47,7 @@ export class AdminService {
         },
         orderBy: { paidAt: "desc" },
       }),
-      this.prisma.payment.count({ where: { status: "SUCCESS" } }),
+      this.prisma.payment.count({ where: { status: { in: ["PAID", "SUCCESS"] } } }),
     ]);
     return { data, total, page, limit, totalPages: Math.ceil(total / limit) };
   }

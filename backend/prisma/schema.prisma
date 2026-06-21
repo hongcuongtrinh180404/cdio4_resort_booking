@@ -198,16 +198,15 @@ model BookingCombo {
 }
 
 model Payment {
-  id                Int            @id @default(autoincrement())
-  bookingId         Int            @unique
-  booking           Booking        @relation(fields: [bookingId], references: [id])
-  amount            Decimal        @db.Decimal(10, 2)
-  gateway           PaymentGateway @default(VNPAY)
-  transactionRef    String         @unique
-  vnpayResponseCode String?
-  status            PaymentStatus  @default(PENDING)
-  paidAt            DateTime?
-  createdAt         DateTime       @default(now())
+  id                 Int            @id @default(autoincrement())
+  bookingId          Int            @unique
+  booking            Booking        @relation(fields: [bookingId], references: [id])
+  amount             Decimal        @db.Decimal(10, 2)
+  transactionRef     String         @unique
+  sepayTransactionId String?
+  status             PaymentStatus  @default(PENDING)
+  paidAt             DateTime?
+  createdAt          DateTime       @default(now())
 
   @@index([transactionRef])
 }
@@ -265,6 +264,7 @@ enum ApiKeyStatus {
 
 enum PaymentStatus {
   PENDING
+  PAID
   SUCCESS
   FAILED
 }
@@ -273,9 +273,4 @@ enum ChatStatus {
   ACTIVE
   RESOLVED
   CLOSED
-}
-
-enum PaymentGateway {
-  VNPAY
-  VISA
 }

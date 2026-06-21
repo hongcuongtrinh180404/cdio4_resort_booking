@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
-import { useParams, useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useState, useRef, useCallback } from "react";
+import { useParams, useRouter } from "next/navigation";
 import { format } from "date-fns";
 import { vi } from "date-fns/locale";
 import { get, post, patch } from "@/lib/api";
@@ -48,25 +48,45 @@ interface Booking {
   } | null;
 }
 
+interface SePayQrInfo {
+  qrUrl: string;
+  bankAccount: string;
+  bankName: string;
+  bankHolder: string;
+  amount: number;
+  content: string;
+}
+
 export default function BookingDetailPage() {
   const params = useParams();
   const router = useRouter();
-  const searchParams = useSearchParams();
   const [booking, setBooking] = useState<Booking | null>(null);
   const [loading, setLoading] = useState(true);
   const [paying, setPaying] = useState(false);
   const [cancelling, setCancelling] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [sepayQr, setSepayQr] = useState<SePayQrInfo | null>(null);
+  const [justPaid, setJustPaid] = useState(false);
   const confettiRan = useRef(false);
-  const justPaid = searchParams.get("payment") === "success";
+  const pollRef = useRef<ReturnType<typeof setInterval>>();
+
+  const fetchBooking = useCallback(async () => {
+    try {
+      const data = await get<Booking>(`/bookings/${params.id}`);
+      setBooking(data);
+      if (data.status === "CONFIRMED" || data.payment?.status === "PAID") {
+        setJustPaid(true);
+        if (pollRef.current) clearInterval(pollRef.current);
+      }
+    } catch {
+      router.push("/bookings");
+    }
+  }, [params.id, router]);
 
   useEffect(() => {
     if (!isAuthenticated()) { router.push("/login"); return; }
-    get<Booking>(`/bookings/${params.id}`)
-      .then(setBooking)
-      .catch(() => router.push("/bookings"))
-      .finally(() => setLoading(false));
-  }, [params.id, router]);
+    fetchBooking().finally(() => setLoading(false));
+  }, [fetchBooking, router]);
 
   useEffect(() => {
     if (booking && justPaid && !confettiRan.current) {
@@ -91,17 +111,22 @@ export default function BookingDetailPage() {
     }
   }, [booking, justPaid]);
 
-  const handlePay = async () => {
+  const handleShowQr = async () => {
     setPaying(true);
     try {
-      await post("/payments/mock", { bookingId: booking!.id });
-      router.push(`/bookings/${params.id}?payment=success`);
+      const info = await post<SePayQrInfo>("/payments/sepay/qr", { bookingId: booking!.id });
+      setSepayQr(info);
+      pollRef.current = setInterval(fetchBooking, 10000);
     } catch {
-      alert("Thanh toán thất bại");
+      alert("Không thể tạo thông tin thanh toán");
     } finally {
       setPaying(false);
     }
   };
+
+  useEffect(() => {
+    return () => { if (pollRef.current) clearInterval(pollRef.current); };
+  }, []);
 
   const handleCancel = async () => {
     if (!confirm("Bạn có chắc chắn muốn hủy đặt phòng này?")) return;
@@ -145,7 +170,7 @@ export default function BookingDetailPage() {
 
   return (
     <>
-      {/* Success Banner (only if just paid) */}
+      {/* Success Banner */}
       {justPaid && (
         <section className="text-center mb-12 max-w-max-width mx-auto px-margin-mobile md:px-margin-desktop pt-4 md:pt-8">
           <div className="mb-6">
@@ -271,12 +296,12 @@ export default function BookingDetailPage() {
                   <div className="md:text-right">
                     <span className="block text-label-caps text-on-surface-variant font-bold mb-2 tracking-wider">THANH TOÁN</span>
                     <div className="font-body-lg font-bold text-on-surface">
-                      {payment?.transactionRef?.startsWith("MOCK_") ? "Thanh toán tại chỗ" : "Chuyển khoản / Thẻ"}
+                      Chuyển khoản ngân hàng
                     </div>
                     {payment ? (
-                      <div className="text-body-sm text-green-600 font-semibold flex md:justify-end items-center gap-1 mt-1">
-                        <Icon icon="material-symbols:verified" className="text-sm" />
-                        {payment.status === "SUCCESS" ? "Đã thanh toán" : payment.status}
+                      <div className={`text-body-sm font-semibold flex md:justify-end items-center gap-1 mt-1 ${payment.status === "PAID" || payment.status === "SUCCESS" ? "text-green-600" : "text-yellow-600"}`}>
+                        <Icon icon={payment.status === "PAID" || payment.status === "SUCCESS" ? "material-symbols:verified" : "material-symbols:hourglass-empty"} className="text-sm" />
+                        {payment.status === "PAID" || payment.status === "SUCCESS" ? "Đã thanh toán" : "Chờ thanh toán"}
                       </div>
                     ) : (
                       <div className="text-body-sm text-yellow-600 font-semibold flex md:justify-end items-center gap-1 mt-1">
@@ -389,7 +414,7 @@ export default function BookingDetailPage() {
                         </text>
                         <text fill="#dc2626" fontFamily="'Inter','Arial'" fontSize="9.2" fontWeight="900" letterSpacing="1.2">
                           <textPath href="#stamp-bottom" startOffset="50%" textAnchor="middle">
-                            {payment ? "ĐÃ THANH TOÁN" : "CHƯA TT"}
+                            {payment?.status === "PAID" || payment?.status === "SUCCESS" ? "ĐÃ THANH TOÁN" : "CHƯA TT"}
                           </textPath>
                         </text>
                         <text x="75" y="72" fill="#dc2626" fontFamily="'Poppins','Arial'" fontSize="16" fontWeight="900" textAnchor="middle" letterSpacing="1">DTUVIVU</text>
@@ -407,11 +432,53 @@ export default function BookingDetailPage() {
 
             {/* CTA Buttons */}
             <div className="mt-8 flex flex-wrap gap-4 justify-center">
-              {booking.status === "PENDING" && (
-                <button onClick={handlePay} disabled={paying} className="inline-flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 text-white px-8 py-3.5 rounded-lg font-bold text-body-md transition-all active:scale-95 shadow-sm disabled:opacity-50">
+              {booking.status === "PENDING" && !sepayQr && (
+                <button onClick={handleShowQr} disabled={paying} className="inline-flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 text-white px-8 py-3.5 rounded-lg font-bold text-body-md transition-all active:scale-95 shadow-sm disabled:opacity-50">
                   <Icon icon="material-symbols:payment" />
                   {paying ? "Đang xử lý..." : "Thanh toán ngay"}
                 </button>
+              )}
+              {booking.status === "PENDING" && sepayQr && (
+                <div className="w-full max-w-md mx-auto bg-white rounded-xl border border-outline p-6 shadow-sm text-center">
+                  <h3 className="font-headline-sm text-headline-sm font-bold mb-4">Quét mã để chuyển khoản</h3>
+                  <img
+                    src={sepayQr.qrUrl}
+                    alt="QR chuyển khoản"
+                    className="w-56 h-56 mx-auto mb-4"
+                  />
+                  <div className="space-y-2 text-left text-body-sm">
+                    <div className="flex justify-between">
+                      <span className="text-on-surface-variant">Ngân hàng:</span>
+                      <span className="font-semibold">{sepayQr.bankName}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-on-surface-variant">Số tài khoản:</span>
+                      <span className="font-semibold">{sepayQr.bankAccount}</span>
+                    </div>
+                    {sepayQr.bankHolder && (
+                      <div className="flex justify-between">
+                        <span className="text-on-surface-variant">Chủ tài khoản:</span>
+                        <span className="font-semibold">{sepayQr.bankHolder}</span>
+                      </div>
+                    )}
+                    <div className="flex justify-between">
+                      <span className="text-on-surface-variant">Số tiền:</span>
+                      <span className="font-semibold text-primary">{formatVND(sepayQr.amount)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-on-surface-variant">Nội dung CK:</span>
+                      <span className="font-semibold">{sepayQr.content}</span>
+                    </div>
+                  </div>
+                  <button
+                    onClick={fetchBooking}
+                    className="mt-4 w-full inline-flex items-center justify-center gap-2 bg-primary hover:bg-primary/95 text-white px-6 py-3 rounded-lg font-bold text-body-md transition-all active:scale-95 shadow-sm"
+                  >
+                    <Icon icon="material-symbols:refresh" />
+                    Đã chuyển khoản (Kiểm tra)
+                  </button>
+                  <p className="text-xs text-on-surface-variant mt-3">Hệ thống tự động kiểm tra mỗi 10 giây</p>
+                </div>
               )}
               {(() => {
                 const user = getUser();

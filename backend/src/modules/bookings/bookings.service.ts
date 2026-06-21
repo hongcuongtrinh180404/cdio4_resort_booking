@@ -2,7 +2,7 @@ import { Injectable, NotFoundException, BadRequestException, ForbiddenException 
 import { PrismaService } from "../../database/prisma/prisma.service";
 import { CreateBookingDto } from "./dto/create-booking.dto";
 import { QueryBookingDto } from "./dto/query-booking.dto";
-import { BookingStatus, PaymentGateway, RoomStatus } from "@prisma/client";
+import { BookingStatus, RoomStatus } from "@prisma/client";
 
 @Injectable()
 export class BookingsService {
@@ -99,17 +99,14 @@ export class BookingsService {
         });
       }
 
-      if (paymentMethod && paymentMethod !== "VNPAY") {
-        await tx.payment.create({
-          data: {
-            bookingId: booking.id,
-            amount: totalAmount,
-            gateway: paymentMethod as PaymentGateway,
-            transactionRef: `TXN${Date.now()}`,
-            status: "PENDING",
-          },
-        });
-      }
+      await tx.payment.create({
+        data: {
+          bookingId: booking.id,
+          amount: totalAmount,
+          transactionRef: `BOOKING_${booking.id}`,
+          status: "PENDING",
+        },
+      });
 
       return this.findBookingById(tx, booking.id);
     });
@@ -256,12 +253,12 @@ export class BookingsService {
       }
     }
 
-    const refunded = booking.payment?.status === "SUCCESS";
+    const refunded = booking.payment?.status === "PAID" || booking.payment?.status === "SUCCESS";
 
     if (refunded) {
       await this.prisma.payment.update({
         where: { bookingId: id },
-        data: { vnpayResponseCode: "MOCK_REFUND" },
+        data: { sepayTransactionId: "CANCELLED_REFUND" },
       });
     }
 
@@ -283,7 +280,7 @@ export class BookingsService {
 
     if (status === "CHECKED_IN") {
       if (booking.status !== "CONFIRMED") throw new BadRequestException("Only confirmed bookings can be checked in");
-      if (booking.payment?.status !== "SUCCESS") throw new BadRequestException("Booking must be paid before check-in");
+      if (booking.payment?.status !== "PAID" && booking.payment?.status !== "SUCCESS") throw new BadRequestException("Booking must be paid before check-in");
     }
 
     if (status === "CHECKED_OUT") {

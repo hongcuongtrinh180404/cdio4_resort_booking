@@ -1,5 +1,5 @@
-import { Controller, Post, Get, Param, Body, Query, UseGuards } from "@nestjs/common";
-import { ApiTags, ApiOperation } from "@nestjs/swagger";
+import { Controller, Post, Get, Param, Body, Headers, UseGuards } from "@nestjs/common";
+import { ApiTags, ApiOperation, ApiExcludeEndpoint } from "@nestjs/swagger";
 import { PaymentsService } from "./payments.service";
 import { CreatePaymentUrlDto } from "./dto/create-payment-url.dto";
 import { JwtAuthGuard } from "../../common/guards/jwt-auth.guard";
@@ -18,22 +18,17 @@ export class PaymentsController {
     return this.paymentsService.mockPayment(dto.bookingId, user.sub);
   }
 
-  @Post("create-url")
+  @Post("sepay/qr")
   @UseGuards(JwtAuthGuard)
-  @ApiOperation({ summary: "Create VNPay payment URL" })
-  createPaymentUrl(@Body() dto: CreatePaymentUrlDto, @CurrentUser() user: JwtPayload) {
-    return this.paymentsService.createPaymentUrl(dto.bookingId, user.sub);
+  @ApiOperation({ summary: "Generate SePay QR code info for booking" })
+  generateSePayQr(@Body() dto: CreatePaymentUrlDto, @CurrentUser() user: JwtPayload) {
+    return this.paymentsService.generateSePayQr(dto.bookingId, user.sub);
   }
 
-  @Get("vnpay-return")
-  @ApiOperation({ summary: "VNPay return URL (UI display only)" })
-  vnpayReturn(@Query() query: any) {
-    return this.paymentsService.handleReturn(query);
-  }
-
-  @Post("vnpay-ipn")
-  @ApiOperation({ summary: "VNPay IPN webhook" })
-  vnpayIpn(@Body() body: any) {
-    return this.paymentsService.handleIpn(body);
+  @Post("sepay/webhook")
+  @ApiExcludeEndpoint()
+  @ApiOperation({ summary: "SePay webhook receiver" })
+  sepayWebhook(@Headers() headers: any, @Body() body: any) {
+    return this.paymentsService.handleSePayWebhook(headers, body);
   }
 }

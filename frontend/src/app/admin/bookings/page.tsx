@@ -373,8 +373,8 @@ export default function AdminBookingsPage() {
                     {detail.payment ? (
                       <>
                         <div className="flex justify-between"><span className="text-on-surface-variant">Trạng thái</span>
-                          <span className={`font-semibold ${detail.payment.status === "SUCCESS" ? "text-green-600" : "text-yellow-600"}`}>
-                            {detail.payment.status === "SUCCESS" ? <><Icon icon="material-symbols:check-circle" className="inline-block align-middle" /> Đã thanh toán</> : detail.payment.status === "PENDING" ? <><Icon icon="material-symbols:hourglass" className="inline-block align-middle" /> Chờ thanh toán</> : <><Icon icon="material-symbols:close" className="inline-block align-middle" /> Thất bại</>}
+                          <span className={`font-semibold ${detail.payment.status === "PAID" || detail.payment.status === "SUCCESS" ? "text-green-600" : "text-yellow-600"}`}>
+                            {detail.payment.status === "PAID" || detail.payment.status === "SUCCESS" ? <><Icon icon="material-symbols:check-circle" className="inline-block align-middle" /> Đã thanh toán</> : detail.payment.status === "PENDING" ? <><Icon icon="material-symbols:hourglass" className="inline-block align-middle" /> Chờ thanh toán</> : <><Icon icon="material-symbols:close" className="inline-block align-middle" /> Thất bại</>}
                           </span>
                         </div>
                         <div className="flex justify-between"><span className="text-on-surface-variant">Mã giao dịch</span><span className="font-mono text-xs">{detail.payment.transactionRef}</span></div>
