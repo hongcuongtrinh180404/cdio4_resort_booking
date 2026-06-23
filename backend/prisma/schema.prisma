@@ -242,6 +242,7 @@ enum RoomStatus {
 
 enum BookingStatus {
   PENDING
+  PENDING_CHECKOUT
   CONFIRMED
   CHECKED_IN
   CHECKED_OUT

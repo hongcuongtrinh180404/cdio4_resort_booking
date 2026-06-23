@@ -1,4 +1,4 @@
-import { Controller, Post, Get, Param, Body, Headers, UseGuards } from "@nestjs/common";
+import { Controller, Post, Body, Headers, UseGuards } from "@nestjs/common";
 import { ApiTags, ApiOperation, ApiExcludeEndpoint } from "@nestjs/swagger";
 import { PaymentsService } from "./payments.service";
 import { CreatePaymentUrlDto } from "./dto/create-payment-url.dto";
@@ -25,10 +25,25 @@ export class PaymentsController {
     return this.paymentsService.generateSePayQr(dto.bookingId, user.sub);
   }
 
+  @Post("sepay/start-checkout")
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: "Start checkout: lock room + return QR info" })
+  startCheckout(@Body() dto: CreatePaymentUrlDto, @CurrentUser() user: JwtPayload) {
+    return this.paymentsService.startCheckout(dto.bookingId, user.sub);
+  }
+
+  @Post("sepay/cancel-checkout")
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: "Cancel checkout: unlock room" })
+  cancelCheckout(@Body() dto: CreatePaymentUrlDto, @CurrentUser() user: JwtPayload) {
+    return this.paymentsService.cancelCheckout(dto.bookingId, user.sub);
+  }
+
   @Post("sepay/webhook")
   @ApiExcludeEndpoint()
   @ApiOperation({ summary: "SePay webhook receiver" })
-  sepayWebhook(@Headers() headers: any, @Body() body: any) {
-    return this.paymentsService.handleSePayWebhook(headers, body);
+  async sepayWebhook(@Headers() headers: any, @Body() body: any) {
+    await this.paymentsService.handleSePayWebhook(headers, body);
+    return { success: true };
   }
 }

@@ -8,21 +8,21 @@ import { BookingStatus, RoomStatus } from "@prisma/client";
 export class BookingsService {
   constructor(private readonly prisma: PrismaService) { }
 
-  async create(dto: CreateBookingDto, userId: number, expiresInMinutes = 2) {
-    const { roomId, checkInDate, checkOutDate, services, combos, paymentMethod } = dto;
+  async create(dto: CreateBookingDto, userId: number) {
+    const { roomId, checkInDate, checkOutDate, services, combos } = dto;
 
     const checkIn = new Date(checkInDate);
     const checkOut = new Date(checkOutDate);
     const numberOfNights = Math.ceil((checkOut.getTime() - checkIn.getTime()) / (1000 * 60 * 60 * 24));
     if (numberOfNights < 1) throw new BadRequestException("Check-out must be after check-in");
 
-    await this.releaseExpiredBookings();
+    await this.releaseExpiredCheckoutBookings();
 
     return this.prisma.$transaction(async (tx) => {
       const conflict = await tx.booking.findFirst({
         where: {
           roomId,
-          status: { in: ["PENDING", "CONFIRMED", "CHECKED_IN"] },
+          status: { in: ["PENDING_CHECKOUT", "CONFIRMED", "CHECKED_IN"] },
           checkInDate: { lt: checkOut },
           checkOutDate: { gt: checkIn },
         },
@@ -58,7 +58,6 @@ export class BookingsService {
 
       const totalAmount = numberOfNights * Number(room.pricePerNight) + serviceTotal + comboTotal;
       const bookingCode = `BK${Date.now()}`;
-      const expiresAt = new Date(Date.now() + expiresInMinutes * 60 * 1000);
 
       const booking = await tx.booking.create({
         data: {
@@ -72,7 +71,7 @@ export class BookingsService {
           serviceTotal,
           comboTotal,
           totalAmount,
-          expiresAt,
+          expiresAt: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
           specialRequests: dto.specialRequests,
         },
       });
@@ -124,11 +123,37 @@ export class BookingsService {
     });
   }
 
-  private async releaseExpiredBookings() {
+  async lockForCheckout(bookingId: number, userId: number) {
+    const booking = await this.prisma.booking.findUnique({ where: { id: bookingId } });
+    if (!booking) throw new NotFoundException("Booking not found");
+    if (booking.userId !== userId) throw new ForbiddenException("Unauthorized");
+    if (booking.status !== "PENDING") throw new BadRequestException("Booking is not in pending state");
+
+    const expiresAt = new Date(Date.now() + 2 * 60 * 1000);
+
+    await this.prisma.booking.update({
+      where: { id: bookingId },
+      data: { status: "PENDING_CHECKOUT", expiresAt },
+    });
+  }
+
+  async cancelCheckout(bookingId: number, userId: number) {
+    const booking = await this.prisma.booking.findUnique({ where: { id: bookingId } });
+    if (!booking) throw new NotFoundException("Booking not found");
+    if (booking.userId !== userId) throw new ForbiddenException("Unauthorized");
+    if (booking.status !== "PENDING_CHECKOUT") throw new BadRequestException("Booking is not in checkout state");
+
+    await this.prisma.booking.update({
+      where: { id: bookingId },
+      data: { status: "CANCELLED" },
+    });
+  }
+
+  private async releaseExpiredCheckoutBookings() {
     const now = new Date();
     const expired = await this.prisma.booking.findMany({
       where: {
-        status: "PENDING",
+        status: "PENDING_CHECKOUT",
         expiresAt: { lt: now },
       },
       select: { id: true },
@@ -142,12 +167,12 @@ export class BookingsService {
     }
 
     if (expired.length > 0) {
-      console.log(`Released ${expired.length} expired booking(s)`);
+      console.log(`Released ${expired.length} expired checkout booking(s)`);
     }
   }
 
   async findByUser(userId: number) {
-    await this.releaseExpiredBookings();
+    await this.releaseExpiredCheckoutBookings();
     return this.prisma.booking.findMany({
       where: { userId },
       include: {
@@ -161,6 +186,7 @@ export class BookingsService {
   }
 
   async findAll(query: QueryBookingDto) {
+    await this.releaseExpiredCheckoutBookings();
     const where: any = {};
     if (query.status) where.status = query.status as BookingStatus;
     if (query.userId) where.userId = query.userId;
@@ -217,7 +243,7 @@ export class BookingsService {
   }
 
   async findById(id: number) {
-    await this.releaseExpiredBookings();
+    await this.releaseExpiredCheckoutBookings();
     const booking = await this.prisma.booking.findUnique({
       where: { id },
       include: {

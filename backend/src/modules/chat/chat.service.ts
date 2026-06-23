@@ -565,7 +565,6 @@ export class ChatService {
         combos,
       },
       userId,
-      2,
     );
 
     return {

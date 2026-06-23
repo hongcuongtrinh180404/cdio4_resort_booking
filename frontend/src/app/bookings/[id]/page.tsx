@@ -48,35 +48,23 @@ interface Booking {
   } | null;
 }
 
-interface SePayQrInfo {
-  qrUrl: string;
-  bankAccount: string;
-  bankName: string;
-  bankHolder: string;
-  amount: number;
-  content: string;
-}
-
 export default function BookingDetailPage() {
   const params = useParams();
   const router = useRouter();
   const [booking, setBooking] = useState<Booking | null>(null);
   const [loading, setLoading] = useState(true);
-  const [paying, setPaying] = useState(false);
   const [cancelling, setCancelling] = useState(false);
+  const [checkoutLoading, setCheckoutLoading] = useState(false);
   const [copied, setCopied] = useState(false);
-  const [sepayQr, setSepayQr] = useState<SePayQrInfo | null>(null);
   const [justPaid, setJustPaid] = useState(false);
   const confettiRan = useRef(false);
-  const pollRef = useRef<ReturnType<typeof setInterval>>();
 
   const fetchBooking = useCallback(async () => {
     try {
       const data = await get<Booking>(`/bookings/${params.id}`);
       setBooking(data);
-      if (data.status === "CONFIRMED" || data.payment?.status === "PAID") {
+      if (data.status === "CONFIRMED") {
         setJustPaid(true);
-        if (pollRef.current) clearInterval(pollRef.current);
       }
     } catch {
       router.push("/bookings");
@@ -86,6 +74,9 @@ export default function BookingDetailPage() {
   useEffect(() => {
     if (!isAuthenticated()) { router.push("/login"); return; }
     fetchBooking().finally(() => setLoading(false));
+
+    const searchPaid = new URLSearchParams(window.location.search).get("payment");
+    if (searchPaid === "success") setJustPaid(true);
   }, [fetchBooking, router]);
 
   useEffect(() => {
@@ -110,23 +101,6 @@ export default function BookingDetailPage() {
       });
     }
   }, [booking, justPaid]);
-
-  const handleShowQr = async () => {
-    setPaying(true);
-    try {
-      const info = await post<SePayQrInfo>("/payments/sepay/qr", { bookingId: booking!.id });
-      setSepayQr(info);
-      pollRef.current = setInterval(fetchBooking, 10000);
-    } catch {
-      alert("Không thể tạo thông tin thanh toán");
-    } finally {
-      setPaying(false);
-    }
-  };
-
-  useEffect(() => {
-    return () => { if (pollRef.current) clearInterval(pollRef.current); };
-  }, []);
 
   const handleCancel = async () => {
     if (!confirm("Bạn có chắc chắn muốn hủy đặt phòng này?")) return;
@@ -432,80 +406,56 @@ export default function BookingDetailPage() {
 
             {/* CTA Buttons */}
             <div className="mt-8 flex flex-wrap gap-4 justify-center">
-              {booking.status === "PENDING" && !sepayQr && (
-                <button onClick={handleShowQr} disabled={paying} className="inline-flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 text-white px-8 py-3.5 rounded-lg font-bold text-body-md transition-all active:scale-95 shadow-sm disabled:opacity-50">
-                  <Icon icon="material-symbols:payment" />
-                  {paying ? "Đang xử lý..." : "Thanh toán ngay"}
-                </button>
-              )}
-              {booking.status === "PENDING" && sepayQr && (
-                <div className="w-full max-w-md mx-auto bg-white rounded-xl border border-outline p-6 shadow-sm text-center">
-                  <h3 className="font-headline-sm text-headline-sm font-bold mb-4">Quét mã để chuyển khoản</h3>
-                  <img
-                    src={sepayQr.qrUrl}
-                    alt="QR chuyển khoản"
-                    className="w-56 h-56 mx-auto mb-4"
-                  />
-                  <div className="space-y-2 text-left text-body-sm">
-                    <div className="flex justify-between">
-                      <span className="text-on-surface-variant">Ngân hàng:</span>
-                      <span className="font-semibold">{sepayQr.bankName}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-on-surface-variant">Số tài khoản:</span>
-                      <span className="font-semibold">{sepayQr.bankAccount}</span>
-                    </div>
-                    {sepayQr.bankHolder && (
-                      <div className="flex justify-between">
-                        <span className="text-on-surface-variant">Chủ tài khoản:</span>
-                        <span className="font-semibold">{sepayQr.bankHolder}</span>
-                      </div>
-                    )}
-                    <div className="flex justify-between">
-                      <span className="text-on-surface-variant">Số tiền:</span>
-                      <span className="font-semibold text-primary">{formatVND(sepayQr.amount)}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-on-surface-variant">Nội dung CK:</span>
-                      <span className="font-semibold">{sepayQr.content}</span>
-                    </div>
-                  </div>
+              {booking.status === "PENDING" ? (
+                <>
                   <button
-                    onClick={fetchBooking}
-                    className="mt-4 w-full inline-flex items-center justify-center gap-2 bg-primary hover:bg-primary/95 text-white px-6 py-3 rounded-lg font-bold text-body-md transition-all active:scale-95 shadow-sm"
+                    onClick={async () => {
+                      setCheckoutLoading(true);
+                      try {
+                        await post("/payments/sepay/start-checkout", { bookingId: booking!.id });
+                        router.push(`/checkout/${params.id}`);
+                      } catch {
+                        alert("Không thể bắt đầu thanh toán. Vui lòng thử lại.");
+                        setCheckoutLoading(false);
+                      }
+                    }}
+                    disabled={checkoutLoading}
+                    className="inline-flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 text-white px-8 py-3.5 rounded-lg font-bold text-body-md transition-all active:scale-95 shadow-sm disabled:opacity-50"
                   >
-                    <Icon icon="material-symbols:refresh" />
-                    Đã chuyển khoản (Kiểm tra)
+                    <Icon icon="material-symbols:payment" />
+                    {checkoutLoading ? "Đang xử lý..." : "Thanh toán"}
                   </button>
-                  <p className="text-xs text-on-surface-variant mt-3">Hệ thống tự động kiểm tra mỗi 10 giây</p>
-                </div>
+                  <button
+                    onClick={() => router.push("/")}
+                    className="inline-flex items-center justify-center gap-2 bg-[#004ac6] hover:bg-[#003ea8] text-white px-8 py-3.5 rounded-lg font-bold text-body-md transition-all active:scale-95 shadow-sm"
+                  >
+                    <Icon icon="material-symbols:home" />
+                    Về trang chủ
+                  </button>
+                </>
+              ) : (
+                <>
+                  <button
+                    onClick={() => window.print()}
+                    className="inline-flex items-center justify-center gap-2 bg-primary hover:bg-primary/95 text-white px-8 py-3.5 rounded-lg font-bold text-body-md transition-all active:scale-95 shadow-sm"
+                  >
+                    <Icon icon="material-symbols:print" />
+                    In hóa đơn / Tải PDF
+                  </button>
+                  {(() => {
+                    const user = getUser();
+                    const isEmployeeOrAdmin = user?.role === "EMPLOYEE" || user?.role === "ADMIN";
+                    const canCancelGuest = booking.status === "CONFIRMED" && (Date.now() - new Date(booking.createdAt).getTime()) / (1000 * 60 * 60) <= 24;
+                    const canCancelStaff = booking.status === "CONFIRMED";
+                    return (isEmployeeOrAdmin ? canCancelStaff : canCancelGuest);
+                  })() && (
+                    <button onClick={handleCancel} disabled={cancelling} className="inline-flex items-center justify-center gap-2 bg-red-600 hover:bg-red-700 text-white px-8 py-3.5 rounded-lg font-bold text-body-md transition-all active:scale-95 shadow-sm disabled:opacity-50">
+                      <Icon icon="material-symbols:cancel" />
+                      {cancelling ? "Đang xử lý..." : "Hủy đặt phòng"}
+                    </button>
+                  )}
+                </>
               )}
-              {(() => {
-                const user = getUser();
-                const isEmployeeOrAdmin = user?.role === "EMPLOYEE" || user?.role === "ADMIN";
-                const canCancelGuest = booking.status === "PENDING" || (booking.status === "CONFIRMED" && (Date.now() - new Date(booking.createdAt).getTime()) / (1000 * 60 * 60) <= 24);
-                const canCancelStaff = booking.status === "PENDING" || booking.status === "CONFIRMED";
-                return (isEmployeeOrAdmin ? canCancelStaff : canCancelGuest);
-              })() && (
-                <button onClick={handleCancel} disabled={cancelling} className="inline-flex items-center justify-center gap-2 bg-red-600 hover:bg-red-700 text-white px-8 py-3.5 rounded-lg font-bold text-body-md transition-all active:scale-95 shadow-sm disabled:opacity-50">
-                  <Icon icon="material-symbols:cancel" />
-                  {cancelling ? "Đang xử lý..." : "Hủy đặt phòng"}
-                </button>
-              )}
-              <a
-                href="/"
-                className="inline-flex items-center justify-center gap-2 bg-primary hover:bg-primary/95 text-white px-8 py-3.5 rounded-lg font-bold text-body-md transition-all active:scale-95 shadow-sm"
-              >
-                <Icon icon="material-symbols:home" />
-                Về trang chủ
-              </a>
-              <button
-                onClick={() => window.print()}
-                className="inline-flex items-center justify-center gap-2 border border-outline bg-white hover:bg-slate-50 text-on-surface px-8 py-3.5 rounded-lg font-bold text-body-md transition-all active:scale-95 shadow-sm"
-              >
-                <Icon icon="material-symbols:print" />
-                In hóa đơn / Tải PDF
-              </button>
             </div>
           </div>
         </div>

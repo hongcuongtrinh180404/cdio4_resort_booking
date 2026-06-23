@@ -1,6 +1,7 @@
 import { Injectable, BadRequestException, NotFoundException, UnauthorizedException } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { PrismaService } from "../../database/prisma/prisma.service";
+import { BookingsService } from "../bookings/bookings.service";
 import { Resend } from "resend";
 
 @Injectable()
@@ -10,6 +11,7 @@ export class PaymentsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly configService: ConfigService,
+    private readonly bookingsService: BookingsService,
   ) {
     this.resend = new Resend(this.configService.get<string>("RESEND_API_KEY") ?? "");
   }
@@ -19,7 +21,6 @@ export class PaymentsService {
     if (!booking) throw new NotFoundException("Booking not found");
     if (booking.userId !== userId) throw new BadRequestException("Unauthorized");
     if (booking.status !== "PENDING") throw new BadRequestException("Booking is not pending");
-    if (new Date() > booking.expiresAt) throw new BadRequestException("Booking has expired, please create a new booking");
 
     await this.prisma.$transaction([
       this.prisma.payment.update({
@@ -89,8 +90,7 @@ export class PaymentsService {
     });
     if (!booking) throw new NotFoundException("Booking not found");
     if (booking.userId !== userId) throw new BadRequestException("Unauthorized");
-    if (booking.status !== "PENDING") throw new BadRequestException("Booking is not pending");
-    if (new Date() > booking.expiresAt) throw new BadRequestException("Booking has expired, please create a new booking");
+    if (booking.status !== "PENDING" && booking.status !== "PENDING_CHECKOUT") throw new BadRequestException("Booking is not pending");
 
     const txnRef = `BOOKING_${booking.id}`;
     const bankAcc = this.configService.get<string>("SEPAY_BANK_ACCOUNT")!;
@@ -98,7 +98,8 @@ export class PaymentsService {
     const bankHolder = this.configService.get<string>("SEPAY_BANK_HOLDER") ?? "";
 
     const amount = Number(booking.totalAmount);
-    const qrUrl = `https://qr.sepay.vn/img?acc=${bankAcc}&bank=${bankName}&amount=${amount}&des=${txnRef}`;
+    const qrAmount = Math.floor(amount / 1000);
+    const qrUrl = `https://qr.sepay.vn/img?acc=${bankAcc}&bank=${bankName}&amount=${qrAmount}&des=${txnRef}`;
 
     await this.prisma.payment.upsert({
       where: { bookingId },
@@ -116,40 +117,74 @@ export class PaymentsService {
     };
   }
 
+  async startCheckout(bookingId: number, userId: number) {
+    await this.bookingsService.lockForCheckout(bookingId, userId);
+    return this.generateSePayQr(bookingId, userId);
+  }
+
+  async cancelCheckout(bookingId: number, userId: number) {
+    await this.bookingsService.cancelCheckout(bookingId, userId);
+    return { message: "Checkout cancelled", bookingId };
+  }
+
   async handleSePayWebhook(headers: any, body: any) {
+    console.log("[SEPAY WEBHOOK] Received:", JSON.stringify(body));
+
     const secret = this.configService.get<string>("SEPAY_WEBHOOK_SECRET");
     if (secret) {
       const authHeader = headers["authorization"] ?? "";
       const expectedAuth = `Apikey ${secret}`;
       if (authHeader !== expectedAuth) {
+        console.warn("[SEPAY WEBHOOK] Invalid signature");
         throw new UnauthorizedException("Invalid webhook signature");
       }
     }
 
-    const transactionRef = body.code ?? body.content;
+    const transactionRef = (body.code || body.content || "").trim();
     const transferAmount = body.transferAmount;
     const sepayTxnId = body.id;
     const gateway = body.gateway;
 
+    console.log("[SEPAY WEBHOOK] Parsed:", { transactionRef, transferAmount, sepayTxnId, gateway });
+
     if (!transactionRef || !transferAmount) {
+      console.warn("[SEPAY WEBHOOK] Missing code or transferAmount");
       return { success: false, message: "Missing code or transferAmount" };
     }
 
-    const payment = await this.prisma.payment.findUnique({
+    let payment = await this.prisma.payment.findUnique({
       where: { transactionRef },
     });
 
     if (!payment) {
+      console.warn(`[SEPAY WEBHOOK] Payment not found for transactionRef: ${transactionRef}, trying fallback...`);
+      const match = transactionRef.match(/BOOKING[_\s]*(\d+)/i);
+      if (match) {
+        payment = await this.prisma.payment.findFirst({
+          where: { bookingId: parseInt(match[1], 10) },
+        });
+      }
+    }
+
+    if (!payment) {
+      console.warn(`[SEPAY WEBHOOK] Payment not found after fallback`);
       return { success: false, message: "Payment not found" };
     }
 
+    console.log(`[SEPAY WEBHOOK] Found payment: id=${payment.id}, bookingId=${payment.bookingId}, amount=${payment.amount}, status=${payment.status}, transactionRef=${payment.transactionRef}`);
+
     if (payment.status === "PAID") {
+      console.log(`[SEPAY WEBHOOK] Payment ${payment.id} already paid`);
       return { success: true, message: "Already paid" };
     }
 
-    if (Number(transferAmount) < Number(payment.amount)) {
+    const expectedAmount = Math.floor(Number(payment.amount) / 1000);
+    if (Number(transferAmount) < expectedAmount) {
+      console.warn(`[SEPAY WEBHOOK] Insufficient amount: transferAmount=${transferAmount}, expected=${expectedAmount}`);
       return { success: false, message: "Insufficient amount" };
     }
+
+    console.log(`[SEPAY WEBHOOK] Amount OK: ${transferAmount} >= ${expectedAmount}, confirming payment...`);
 
     await this.prisma.$transaction([
       this.prisma.payment.update({
@@ -157,7 +192,7 @@ export class PaymentsService {
         data: {
           status: "PAID",
           paidAt: new Date(),
-          sepayTransactionId: sepayTxnId,
+          sepayTransactionId: String(sepayTxnId),
         },
       }),
       this.prisma.booking.update({
@@ -165,6 +200,8 @@ export class PaymentsService {
         data: { status: "CONFIRMED" },
       }),
     ]);
+
+    console.log(`[SEPAY WEBHOOK] Payment ${payment.id} confirmed, booking ${payment.bookingId} -> CONFIRMED`);
 
     this.sendConfirmationEmail(payment.bookingId).catch((err) =>
       console.error("[EMAIL ERROR]", err),
