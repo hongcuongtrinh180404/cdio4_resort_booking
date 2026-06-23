@@ -1,4 +1,4 @@
-import { IsEmail, IsString, MinLength, IsOptional } from "class-validator";
+import { IsEmail, IsString, MinLength, IsOptional, Matches } from "class-validator";
 
 export class RegisterDto {
   @IsEmail()
@@ -13,6 +13,7 @@ export class RegisterDto {
 
   @IsOptional()
   @IsString()
+  @Matches(/^\d+$/, { message: "Số điện thoại chỉ được chứa số (0-9)" })
   phone?: string;
 
   @IsOptional()

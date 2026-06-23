@@ -18,12 +18,18 @@ export default function LoginPage() {
   const [form, setForm] = useState({ email: "", password: "" });
   const [error, setError] = useState("");
 
+  const redirect = typeof window !== "undefined"
+    ? new URLSearchParams(window.location.search).get("redirect")
+    : null;
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
       const res: any = await post("/auth/login", form);
       setToken(res.token);
-      if (res.user?.role === "ADMIN" || res.user?.role === "EMPLOYEE") {
+      if (redirect) {
+        router.push(redirect);
+      } else if (res.user?.role === "ADMIN" || res.user?.role === "EMPLOYEE") {
         router.push("/admin/dashboard");
       } else {
         router.push("/rooms");

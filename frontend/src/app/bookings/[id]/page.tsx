@@ -72,7 +72,7 @@ export default function BookingDetailPage() {
   }, [params.id, router]);
 
   useEffect(() => {
-    if (!isAuthenticated()) { router.push("/login"); return; }
+    if (!isAuthenticated()) { router.push(`/login?redirect=${encodeURIComponent(window.location.href)}`); return; }
     fetchBooking().finally(() => setLoading(false));
 
     const searchPaid = new URLSearchParams(window.location.search).get("payment");

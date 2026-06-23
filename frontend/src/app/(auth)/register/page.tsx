@@ -5,14 +5,20 @@ import { useRouter } from "next/navigation";
 import { post } from "@/lib/api";
 import { setToken } from "@/lib/auth";
 import Link from "next/link";
+import { PhoneInput } from "@/components/ui/phone-input";
 
 export default function RegisterPage() {
   const router = useRouter();
   const [form, setForm] = useState({ email: "", password: "", fullName: "", phone: "" });
   const [error, setError] = useState("");
+  const [phoneError, setPhoneError] = useState("");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (form.phone && !/^\d+$/.test(form.phone)) {
+      setPhoneError("Số điện thoại chỉ được chứa số (0-9)");
+      return;
+    }
     try {
       const res: any = await post("/auth/register", form);
       setToken(res.token);
@@ -42,12 +48,11 @@ export default function RegisterPage() {
           onChange={(e) => setForm({ ...form, email: e.target.value })}
           required
         />
-        <input
-          className="rounded border p-2"
-          type="tel"
-          placeholder="Số điện thoại"
+        <PhoneInput
           value={form.phone}
-          onChange={(e) => setForm({ ...form, phone: e.target.value })}
+          onChange={(v) => { setForm({ ...form, phone: v }); setPhoneError(""); }}
+          error={phoneError}
+          placeholder="Số điện thoại"
         />
         <input
           className="rounded border p-2"

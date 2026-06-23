@@ -6,6 +6,7 @@ import { getUser } from "@/lib/auth";
 import Pagination from "@/components/admin/Pagination";
 import ChatPanel from "@/components/chat/ChatPanel";
 import { Icon } from "@iconify/react";
+import { PhoneInput } from "@/components/ui/phone-input";
 
 interface User {
   id: number;
@@ -83,12 +84,14 @@ function EditUserModal({ user, onClose, onSaved }: { user: User; onClose: () => 
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [showConfirm, setShowConfirm] = useState(false);
+  const [phoneError, setPhoneError] = useState("");
 
   const handleSave = async () => {
     if (form.newPassword && form.newPassword !== form.confirmPassword) {
       setError("Mật khẩu xác nhận không khớp");
       return;
     }
+    if (form.phone && !/^\d+$/.test(form.phone)) { setPhoneError("Số điện thoại chỉ được chứa số (0-9)"); return; }
     setShowConfirm(true);
   };
 
@@ -139,8 +142,13 @@ function EditUserModal({ user, onClose, onSaved }: { user: User; onClose: () => 
               <input value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} className="w-full h-10 px-3 rounded-lg border border-outline/40 text-body-sm focus:ring-2 focus:ring-primary/30 focus:border-primary outline-none" />
             </div>
             <div>
-              <label className="text-body-xs font-semibold text-on-surface-variant block mb-1">Số điện thoại</label>
-              <input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} className="w-full h-10 px-3 rounded-lg border border-outline/40 text-body-sm focus:ring-2 focus:ring-primary/30 focus:border-primary outline-none" />
+              <PhoneInput
+                value={form.phone}
+                onChange={(v) => { setForm({ ...form, phone: v }); setPhoneError(""); }}
+                error={phoneError}
+                label="Số điện thoại"
+                placeholder="Nhập số điện thoại"
+              />
             </div>
             <div>
               <label className="text-body-xs font-semibold text-on-surface-variant block mb-1">Vai trò</label>
@@ -185,9 +193,11 @@ function CreateUserModal({ onClose, onCreated }: { onClose: () => void; onCreate
   const [form, setForm] = useState({ email: "", password: "", fullName: "", phone: "", role: "GUEST" });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [phoneError, setPhoneError] = useState("");
 
   const handleSubmit = async () => {
     if (!form.email || !form.password || !form.fullName) { setError("Vui lòng điền đầy đủ thông tin"); return; }
+    if (form.phone && !/^\d+$/.test(form.phone)) { setPhoneError("Số điện thoại chỉ được chứa số (0-9)"); return; }
     setSaving(true);
     setError("");
     try {
@@ -210,7 +220,12 @@ function CreateUserModal({ onClose, onCreated }: { onClose: () => void; onCreate
           <input placeholder="Họ tên *" value={form.fullName} onChange={(e) => setForm({ ...form, fullName: e.target.value })} className="w-full h-10 px-3 rounded-lg border border-outline/40 text-body-sm focus:ring-2 focus:ring-primary/30 focus:border-primary outline-none" />
           <input placeholder="Email *" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} className="w-full h-10 px-3 rounded-lg border border-outline/40 text-body-sm focus:ring-2 focus:ring-primary/30 focus:border-primary outline-none" />
           <input type="password" placeholder="Mật khẩu *" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} className="w-full h-10 px-3 rounded-lg border border-outline/40 text-body-sm focus:ring-2 focus:ring-primary/30 focus:border-primary outline-none" />
-          <input placeholder="Số điện thoại" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} className="w-full h-10 px-3 rounded-lg border border-outline/40 text-body-sm focus:ring-2 focus:ring-primary/30 focus:border-primary outline-none" />
+          <PhoneInput
+            value={form.phone}
+            onChange={(v) => { setForm({ ...form, phone: v }); setPhoneError(""); }}
+            error={phoneError}
+            placeholder="Số điện thoại"
+          />
           <select value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value })} className="w-full h-10 px-3 rounded-lg border border-outline/40 text-body-sm focus:ring-2 focus:ring-primary/30 focus:border-primary outline-none bg-white">
             <option value="GUEST">Khách hàng</option>
             <option value="EMPLOYEE">Nhân viên</option>

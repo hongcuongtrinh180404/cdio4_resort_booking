@@ -11,6 +11,7 @@ import { formatVND } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { PhoneInput } from "@/components/ui/phone-input";
 
 interface UserProfile {
   id: number;
@@ -85,6 +86,8 @@ function NewBookingForm() {
   const [selectedServices, setSelectedServices] = useState<Record<number, number>>({});
   const [selectedCombos, setSelectedCombos] = useState<Record<number, number>>({});
 
+  const [phone, setPhone] = useState("");
+  const [phoneError, setPhoneError] = useState("");
   const [specialRequests, setSpecialRequests] = useState("");
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -111,7 +114,7 @@ function NewBookingForm() {
 
   useEffect(() => {
     if (isAuthenticated()) {
-      get<UserProfile>("/users/me").then(setProfile).catch(() => {});
+      get<UserProfile>("/users/me").then((p) => { setProfile(p); setPhone(p.phone ?? ""); }).catch(() => {});
     }
   }, []);
 
@@ -181,7 +184,7 @@ function NewBookingForm() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!isAuthenticated()) { router.push("/login"); return; }
+    if (!isAuthenticated()) { router.push(`/login?redirect=${encodeURIComponent(window.location.href)}`); return; }
     if (!checkIn || !checkOut) { setError("Vui lòng chọn ngày"); return; }
     setSubmitting(true);
     setError("");
@@ -248,8 +251,13 @@ function NewBookingForm() {
                   <input type="text" defaultValue={profile?.fullName ?? ""} className="w-full h-10 border border-outline rounded-lg px-3 text-body-sm bg-background text-on-surface focus:ring-2 focus:ring-primary focus:border-primary outline-none" placeholder="Nhập họ tên" />
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-label-caps text-xs text-on-surface-variant uppercase tracking-wider font-semibold">Số điện thoại</label>
-                  <input type="tel" defaultValue={profile?.phone ?? ""} className="w-full h-10 border border-outline rounded-lg px-3 text-body-sm bg-background text-on-surface focus:ring-2 focus:ring-primary focus:border-primary outline-none" placeholder="Nhập số điện thoại" />
+                  <PhoneInput
+                    value={phone}
+                    onChange={(v) => { setPhone(v); setPhoneError(""); }}
+                    error={phoneError}
+                    label="Số điện thoại"
+                    placeholder="Nhập số điện thoại"
+                  />
                 </div>
                 <div className="space-y-1.5 md:col-span-2">
                   <label className="text-label-caps text-xs text-on-surface-variant uppercase tracking-wider font-semibold">Email</label>

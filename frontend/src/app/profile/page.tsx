@@ -9,6 +9,7 @@ import { format } from "date-fns";
 import { vi } from "date-fns/locale";
 import Link from "next/link";
 import { Icon } from "@iconify/react";
+import { PhoneInput } from "@/components/ui/phone-input";
 
 type TabKey = "info" | "password" | "wishlist" | "bookings";
 
@@ -87,6 +88,8 @@ export default function ProfilePage() {
   const [address, setAddress] = useState("");
   const [saving, setSaving] = useState(false);
 
+  const [phoneError, setPhoneError] = useState("");
+
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -113,6 +116,7 @@ export default function ProfilePage() {
   }, [tab, wishlist.length, bookings.length, fetchWishlist, fetchBookings]);
 
   const handleUpdateProfile = async () => {
+    if (phone && !/^\d+$/.test(phone)) { setPhoneError("Số điện thoại chỉ được chứa số (0-9)"); return; }
     setSaving(true);
     try {
       const updated = await patch<UserProfile>("/users/me", { fullName, phone, address });
@@ -206,8 +210,13 @@ export default function ProfilePage() {
                   <input value={fullName} onChange={(e) => setFullName(e.target.value)} className="w-full h-10 border border-outline rounded-lg px-3 text-body-sm bg-background text-on-surface focus:ring-2 focus:ring-primary focus:border-primary outline-none" />
                 </div>
                 <div>
-                  <label className="block text-label-caps text-on-surface-variant font-bold mb-1.5 tracking-wider">Số điện thoại</label>
-                  <input value={phone} onChange={(e) => setPhone(e.target.value)} className="w-full h-10 border border-outline rounded-lg px-3 text-body-sm bg-background text-on-surface focus:ring-2 focus:ring-primary focus:border-primary outline-none" />
+                  <PhoneInput
+                    value={phone}
+                    onChange={(v) => { setPhone(v); setPhoneError(""); }}
+                    error={phoneError}
+                    label="Số điện thoại"
+                    placeholder="Nhập số điện thoại"
+                  />
                 </div>
                 <div>
                   <label className="block text-label-caps text-on-surface-variant font-bold mb-1.5 tracking-wider">Địa chỉ</label>

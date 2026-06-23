@@ -6,7 +6,7 @@ import { RolesGuard } from "../../common/guards/roles.guard";
 import { Roles } from "../../common/decorators/roles.decorator";
 import { Role, UserStatus } from "../../common/enums";
 import { PaginationDto } from "../../common/dto/pagination.dto";
-import { IsEmail, IsString, MinLength, IsOptional, IsEnum } from "class-validator";
+import { IsEmail, IsString, MinLength, IsOptional, IsEnum, Matches } from "class-validator";
 
 class CreateUserByAdminDto {
   @IsEmail()
@@ -39,6 +39,7 @@ class UpdateUserDto {
 
   @IsOptional()
   @IsString()
+  @Matches(/^\d+$/, { message: "Số điện thoại chỉ được chứa số (0-9)" })
   phone?: string;
 
   @IsOptional()

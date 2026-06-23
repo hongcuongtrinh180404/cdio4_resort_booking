@@ -6,6 +6,7 @@ import { format } from "date-fns";
 import { vi } from "date-fns/locale";
 import { Icon } from "@iconify/react";
 import { get, post, del } from "@/lib/api";
+import { isAuthenticated } from "@/lib/auth";
 import { formatVND, cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
@@ -167,9 +168,11 @@ function RoomsContent() {
   useEffect(() => {
     get<RoomType[]>("/room-types").then(setRoomTypes).catch(() => {});
     get<Amenity[]>("/rooms/amenities").then(setAmenities).catch(() => {});
-    get<WishlistItem[]>("/wishlist").then((items) => {
-      setWishlistedIds(new Set(items.map((i) => i.roomId)));
-    }).catch(() => {});
+    if (isAuthenticated()) {
+      get<WishlistItem[]>("/wishlist").then((items) => {
+        setWishlistedIds(new Set(items.map((i) => i.roomId)));
+      }).catch(() => {});
+    }
   }, []);
 
   // Reset to page 1 when filters change

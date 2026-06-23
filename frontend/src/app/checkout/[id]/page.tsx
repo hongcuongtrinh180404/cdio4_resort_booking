@@ -86,7 +86,7 @@ export default function CheckoutPage() {
   }, [params.id, router]);
 
   useEffect(() => {
-    if (!isAuthenticated()) { router.push("/login"); return; }
+    if (!isAuthenticated()) { router.push(`/login?redirect=${encodeURIComponent(window.location.href)}`); return; }
 
     Promise.all([
       post<SePayQrInfo>("/payments/sepay/qr", { bookingId: Number(params.id) }),
