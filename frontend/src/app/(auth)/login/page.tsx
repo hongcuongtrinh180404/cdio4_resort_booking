@@ -6,6 +6,7 @@ import { post } from "@/lib/api";
 import { setToken } from "@/lib/auth";
 import Link from "next/link";
 import { Icon } from "@iconify/react";
+import LockedAccountDialog from "@/components/ui/locked-account-dialog";
 
 const QUICK_LOGINS = [
   { label: "ADMIN", icon: "material-symbols:crown", email: "admin@dtuvivi.com", color: "bg-red-600 hover:bg-red-700" },
@@ -17,6 +18,7 @@ export default function LoginPage() {
   const router = useRouter();
   const [form, setForm] = useState({ email: "", password: "" });
   const [error, setError] = useState("");
+  const [showLockedDialog, setShowLockedDialog] = useState(false);
 
   const redirect = typeof window !== "undefined"
     ? new URLSearchParams(window.location.search).get("redirect")
@@ -35,7 +37,12 @@ export default function LoginPage() {
         router.push("/rooms");
       }
     } catch (err: any) {
-      setError(err.body?.message ?? "Đăng nhập thất bại");
+      const msg = err.body?.message ?? "";
+      if (msg === "Tài khoản đã bị khóa") {
+        setShowLockedDialog(true);
+      } else {
+        setError(msg || "Đăng nhập thất bại");
+      }
     }
   };
 
@@ -129,6 +136,8 @@ export default function LoginPage() {
           Tất cả tài khoản đều dùng mật khẩu <strong>123456</strong>
         </p>
       </div>
+
+      {showLockedDialog && <LockedAccountDialog onClose={() => setShowLockedDialog(false)} />}
     </div>
   );
 }
