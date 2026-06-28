@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException, BadRequestException, ConflictException } from "@nestjs/common";
 import { PrismaService } from "../../database/prisma/prisma.service";
 import * as bcrypt from "bcryptjs";
+import { generateRevenueExcel } from "./utils/excel-export.util";
 
 @Injectable()
 export class AdminService {
@@ -33,11 +34,78 @@ export class AdminService {
     };
   }
 
-  async getRevenueReport(page = 1, limit = 20) {
+  async getRevenueStats(fromDate?: string, toDate?: string) {
+    const where: any = { status: { in: ["PAID", "SUCCESS"] }, paidAt: { not: null } };
+    if (fromDate || toDate) {
+      where.paidAt = {};
+      if (fromDate) where.paidAt.gte = new Date(fromDate + "T00:00:00.000Z");
+      if (toDate) where.paidAt.lte = new Date(toDate + "T23:59:59.999Z");
+    }
+
+    const payments = await this.prisma.payment.findMany({
+      where,
+      select: { amount: true, paidAt: true, bookingId: true },
+      orderBy: { paidAt: "asc" },
+    });
+
+    const dailyMap = new Map<string, { bookingIds: Set<number>; revenue: number }>();
+    for (const p of payments) {
+      if (!p.paidAt) continue;
+      const key = p.paidAt.toISOString().slice(0, 10);
+      if (!dailyMap.has(key)) dailyMap.set(key, { bookingIds: new Set(), revenue: 0 });
+      const entry = dailyMap.get(key)!;
+      entry.bookingIds.add(p.bookingId);
+      entry.revenue += Number(p.amount);
+    }
+
+    const data = Array.from(dailyMap.entries()).map(([date, { bookingIds, revenue }]) => ({
+      date,
+      bookingCount: bookingIds.size,
+      revenue,
+    }));
+
+    return {
+      data,
+      summary: {
+        totalRevenue: data.reduce((s, d) => s + d.revenue, 0),
+        totalBookings: data.reduce((s, d) => s + d.bookingCount, 0),
+      },
+    };
+  }
+
+  async exportRevenueStatsExcel(fromDate?: string, toDate?: string): Promise<Buffer> {
+    const stats = await this.getRevenueStats(fromDate, toDate);
+    
+    // Format daily data for display: YYYY-MM-DD to DD/MM/YYYY
+    const formattedData = stats.data.map(item => {
+      const parts = item.date.split('-');
+      const formattedDate = parts.length === 3 ? `${parts[2]}/${parts[1]}/${parts[0]}` : item.date;
+      return {
+        ...item,
+        date: formattedDate,
+      };
+    });
+
+    // Format query dates for subtitle
+    const formattedFromDate = fromDate ? fromDate.split('-').reverse().join('/') : undefined;
+    const formattedToDate = toDate ? toDate.split('-').reverse().join('/') : undefined;
+
+    const workbook = await generateRevenueExcel(formattedData, formattedFromDate, formattedToDate);
+    return workbook.xlsx.writeBuffer() as Promise<Buffer>;
+  }
+
+  async getRevenueReport(page = 1, limit = 20, fromDate?: string, toDate?: string) {
+    const where: any = { status: { in: ["PAID", "SUCCESS"] } };
+    if (fromDate || toDate) {
+      where.paidAt = {};
+      if (fromDate) where.paidAt.gte = new Date(fromDate + "T00:00:00.000Z");
+      if (toDate) where.paidAt.lte = new Date(toDate + "T23:59:59.999Z");
+    }
+
     const skip = (page - 1) * limit;
     const [data, total] = await Promise.all([
       this.prisma.payment.findMany({
-        where: { status: { in: ["PAID", "SUCCESS"] } },
+        where,
         skip,
         take: limit,
         include: {
@@ -47,7 +115,7 @@ export class AdminService {
         },
         orderBy: { paidAt: "desc" },
       }),
-      this.prisma.payment.count({ where: { status: { in: ["PAID", "SUCCESS"] } } }),
+      this.prisma.payment.count({ where }),
     ]);
     return { data, total, page, limit, totalPages: Math.ceil(total / limit) };
   }

@@ -1,4 +1,5 @@
-import { Controller, Get, Post, Patch, Param, Body, Query, UseGuards } from "@nestjs/common";
+import { Controller, Get, Post, Patch, Param, Body, Query, UseGuards, Res } from "@nestjs/common";
+import { Response } from "express";
 import { ApiTags, ApiOperation } from "@nestjs/swagger";
 import { AdminService } from "./admin.service";
 import { JwtAuthGuard } from "../../common/guards/jwt-auth.guard";
@@ -6,6 +7,7 @@ import { RolesGuard } from "../../common/guards/roles.guard";
 import { Roles } from "../../common/decorators/roles.decorator";
 import { Role, UserStatus } from "../../common/enums";
 import { PaginationDto } from "../../common/dto/pagination.dto";
+import { RevenueQueryDto } from "./dto/revenue-query.dto";
 import { IsEmail, IsString, MinLength, IsOptional, IsEnum, Matches } from "class-validator";
 
 class CreateUserByAdminDto {
@@ -69,10 +71,33 @@ export class AdminController {
     return this.adminService.getDashboard();
   }
 
+  @Get("reports/revenue-stats")
+  @ApiOperation({ summary: "Get aggregated revenue stats by day" })
+  revenueStats(@Query() query: RevenueQueryDto) {
+    return this.adminService.getRevenueStats(query.fromDate, query.toDate);
+  }
+
   @Get("reports/revenue")
   @ApiOperation({ summary: "Get revenue report" })
-  revenue(@Query() pagination: PaginationDto) {
-    return this.adminService.getRevenueReport(pagination.page, pagination.limit);
+  revenue(@Query() query: RevenueQueryDto) {
+    return this.adminService.getRevenueReport(query.page, query.limit, query.fromDate, query.toDate);
+  }
+
+  @Get("reports/revenue/export")
+  @ApiOperation({ summary: "Export revenue report to Excel" })
+  async exportRevenue(@Query() query: RevenueQueryDto, @Res() res: Response) {
+    const buffer = await this.adminService.exportRevenueStatsExcel(query.fromDate, query.toDate);
+    
+    res.setHeader(
+      "Content-Type",
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    );
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename=bao_cao_doanh_thu_${query.fromDate || "all"}_to_${query.toDate || "all"}.xlsx`
+    );
+    
+    res.end(buffer);
   }
 
   @Get("rooms")

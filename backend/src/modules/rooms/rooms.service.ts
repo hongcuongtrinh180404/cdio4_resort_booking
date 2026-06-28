@@ -44,7 +44,7 @@ export class RoomsService {
       where.NOT = {
         bookings: {
           some: {
-            status: { notIn: [BookingStatus.CANCELLED] },
+            status: { in: [BookingStatus.PENDING_CHECKOUT, BookingStatus.CONFIRMED, BookingStatus.CHECKED_IN] },
             checkInDate: { lt: checkOutDate },
             checkOutDate: { gt: checkInDate },
           },
@@ -86,7 +86,7 @@ export class RoomsService {
     const bookings = await this.prisma.booking.findMany({
       where: {
         roomId: id,
-        status: { in: [BookingStatus.PENDING, BookingStatus.CONFIRMED, BookingStatus.CHECKED_IN] },
+        status: { in: [BookingStatus.CONFIRMED, BookingStatus.CHECKED_IN, BookingStatus.CHECKED_OUT] },
       },
       select: {
         checkInDate: true,
