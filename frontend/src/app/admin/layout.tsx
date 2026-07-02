@@ -47,13 +47,14 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     <>
       <style>{`
         body > footer { display: none !important; }
+        body > main { padding-top: 0 !important; }
         input[type=number]::-webkit-inner-spin-button,
         input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
         input[type=number] { -moz-appearance: textfield; }
       `}</style>
-      <div className="flex min-h-screen bg-gray-50">
+      <div className="flex h-screen overflow-hidden bg-gray-50">
         {/* Sidebar */}
-        <aside className={`${sidebarOpen ? "w-64" : "w-16"} bg-white border-r border-outline flex flex-col transition-all duration-300 shrink-0`}>
+        <aside className={`${sidebarOpen ? "w-64" : "w-16"} bg-white border-r border-outline flex flex-col transition-all duration-300 shrink-0 overflow-hidden`}>
           {/* Logo */}
           <div className="h-[72px] flex items-center gap-3 px-4 border-b border-outline">
             <button onClick={() => setSidebarOpen(!sidebarOpen)} className="shrink-0 text-on-surface hover:text-primary transition-colors">
@@ -120,7 +121,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         </aside>
 
         {/* Main Content */}
-        <main className="flex-1 overflow-auto">
+        <main className="flex-1 overflow-y-auto">
           {children}
         </main>
       </div>

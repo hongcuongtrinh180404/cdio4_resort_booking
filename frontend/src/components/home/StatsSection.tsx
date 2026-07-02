@@ -59,15 +59,25 @@ function StatCard({ icon, iconColor, target, decimals = 0, suffix = "", label }:
   return (
     <div
       ref={ref}
-      className="bg-surface p-6 rounded-xl border border-outline text-center hover:shadow-lg hover:-translate-y-1 transition-all duration-300"
+      className="group bg-surface p-6 md:p-8 rounded-xl border border-outline text-center hover:shadow-xl hover:-translate-y-1.5 transition-all duration-300 relative overflow-hidden"
     >
-      <div className={`${iconColor} mb-2`}>
-        <Icon icon={`material-symbols:${icon.replace(/_/g, "-")}`} className="text-4xl" />
+      <div className={`absolute top-0 left-0 right-0 h-1 transition-all duration-300 opacity-0 group-hover:opacity-100 ${
+        iconColor.includes("primary") ? "bg-primary" : "bg-secondary"
+      }`} />
+      
+      <div className="flex justify-center mb-4">
+        <div className={`w-14 h-14 rounded-full flex items-center justify-center transition-all duration-300 group-hover:scale-110 group-hover:rotate-6 ${
+          iconColor.includes("primary") 
+            ? "bg-primary/10 text-primary group-hover:bg-primary group-hover:text-white" 
+            : "bg-secondary/10 text-secondary group-hover:bg-secondary group-hover:text-on-secondary"
+        }`}>
+          <Icon icon={`material-symbols:${icon.replace(/_/g, "-")}`} className="text-2xl" />
+        </div>
       </div>
-      <h3 className="font-headline-lg text-headline-lg text-on-surface font-bold">
+      <h3 className="font-headline-lg text-headline-lg text-on-surface font-bold tracking-tight">
         {displayValue}
       </h3>
-      <p className="font-body-sm text-body-sm text-on-surface-variant mt-1 font-medium">{label}</p>
+      <p className="font-body-sm text-body-sm text-on-surface-variant mt-2 font-medium tracking-wide">{label}</p>
     </div>
   );
 }

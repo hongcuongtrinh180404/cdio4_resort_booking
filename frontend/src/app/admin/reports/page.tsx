@@ -124,7 +124,7 @@ export default function AdminReportsPage() {
             </Button>
           </PopoverTrigger>
           <PopoverContent className="w-auto p-0" align="start">
-            <Calendar mode="single" selected={fromDate} onSelect={(d) => d && setFromDate(d)} />
+            <Calendar mode="single" selected={fromDate} onSelect={(d) => d && setFromDate(d)} disabled={(d) => d > toDate} />
           </PopoverContent>
         </Popover>
 
@@ -138,7 +138,7 @@ export default function AdminReportsPage() {
             </Button>
           </PopoverTrigger>
           <PopoverContent className="w-auto p-0" align="start">
-            <Calendar mode="single" selected={toDate} onSelect={(d) => d && setToDate(d)} />
+            <Calendar mode="single" selected={toDate} onSelect={(d) => d && setToDate(d)} disabled={(d) => d < fromDate} />
           </PopoverContent>
         </Popover>
 

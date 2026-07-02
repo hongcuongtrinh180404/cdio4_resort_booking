@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { io, Socket } from "socket.io-client";
 import { post } from "@/lib/api";
 import { getToken } from "@/lib/auth";
@@ -109,6 +110,7 @@ function BookingProposal({ data, onConfirm, confirming }: { data: any; onConfirm
 }
 
 export default function ChatWidget() {
+  const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([
     { role: "assistant", content: "Xin chào! Tôi là trợ lý đặt phòng của DTUVIVU. Tôi có thể giúp gì cho bạn?" },
@@ -143,6 +145,8 @@ export default function ChatWidget() {
 
     return () => { socket.disconnect(); };
   }, [open]);
+
+  if (pathname.startsWith("/admin")) return null;
 
   const sendMessage = async () => {
     if (!input.trim() || loading) return;
