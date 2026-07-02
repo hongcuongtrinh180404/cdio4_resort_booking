@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException, BadRequestException, ConflictException } from "@nestjs/common";
 import { PrismaService } from "../../database/prisma/prisma.service";
 import * as bcrypt from "bcryptjs";
-import { generateRevenueExcel } from "./utils/excel-export.util";
+import { generateRevenueExcel, generateTopRoomTypesExcel, generateTopBookedRoomsExcel, generateTopCustomersExcel, generateRevenueBySourceExcel, generateTopServicesExcel } from "./utils/excel-export.util";
 
 @Injectable()
 export class AdminService {
@@ -34,6 +34,10 @@ export class AdminService {
     };
   }
 
+  // ────────────────────────────────────────────────────────────────
+  // Revenue Stats with Trend
+  // ────────────────────────────────────────────────────────────────
+
   async getRevenueStats(fromDate?: string, toDate?: string) {
     const where: any = { status: { in: ["PAID", "SUCCESS"] }, paidAt: { not: null } };
     if (fromDate || toDate) {
@@ -64,14 +68,50 @@ export class AdminService {
       revenue,
     }));
 
+    const totalRevenue = data.reduce((s, d) => s + d.revenue, 0);
+    const totalBookings = data.reduce((s, d) => s + d.bookingCount, 0);
+
+    // Calculate trend vs previous period
+    let revenueChange: number | null = null;
+    let bookingsChange: number | null = null;
+
+    if (fromDate && toDate) {
+      const from = new Date(fromDate + "T00:00:00.000Z");
+      const to = new Date(toDate + "T23:59:59.999Z");
+      const durationMs = to.getTime() - from.getTime();
+      const prevTo = new Date(from.getTime() - 1);
+      const prevFrom = new Date(prevTo.getTime() - durationMs);
+
+      const prevPayments = await this.prisma.payment.findMany({
+        where: {
+          status: { in: ["PAID", "SUCCESS"] },
+          paidAt: { gte: prevFrom, lte: prevTo },
+        },
+        select: { amount: true, bookingId: true },
+      });
+
+      const prevRevenue = prevPayments.reduce((s, p) => s + Number(p.amount), 0);
+      const prevBookingIds = new Set(prevPayments.map((p) => p.bookingId));
+      const prevBookings = prevBookingIds.size;
+
+      revenueChange = prevRevenue > 0 ? ((totalRevenue - prevRevenue) / prevRevenue) * 100 : null;
+      bookingsChange = prevBookings > 0 ? ((totalBookings - prevBookings) / prevBookings) * 100 : null;
+    }
+
     return {
       data,
       summary: {
-        totalRevenue: data.reduce((s, d) => s + d.revenue, 0),
-        totalBookings: data.reduce((s, d) => s + d.bookingCount, 0),
+        totalRevenue,
+        totalBookings,
+        revenueChange,
+        bookingsChange,
       },
     };
   }
+
+  // ────────────────────────────────────────────────────────────────
+  // Export Revenue Stats Excel
+  // ────────────────────────────────────────────────────────────────
 
   async exportRevenueStatsExcel(fromDate?: string, toDate?: string): Promise<Buffer> {
     const stats = await this.getRevenueStats(fromDate, toDate);
@@ -93,6 +133,264 @@ export class AdminService {
     const workbook = await generateRevenueExcel(formattedData, formattedFromDate, formattedToDate);
     return workbook.xlsx.writeBuffer() as Promise<Buffer>;
   }
+
+  // ────────────────────────────────────────────────────────────────
+  // Top Room Types by Revenue
+  // ────────────────────────────────────────────────────────────────
+
+  async getTopRoomTypesByRevenue(fromDate?: string, toDate?: string, topN = 10) {
+    const dateFilter = this.buildPaymentDateFilter(fromDate, toDate);
+
+    const bookings = await this.prisma.booking.findMany({
+      where: {
+        status: { in: ["CONFIRMED", "CHECKED_IN", "CHECKED_OUT"] },
+        payment: { ...dateFilter },
+      },
+      select: {
+        id: true,
+        room: {
+          select: {
+            roomType: { select: { id: true, name: true } },
+          },
+        },
+        payment: { select: { amount: true } },
+      },
+    });
+
+    const map = new Map<number, { name: string; revenue: number; bookingCount: number }>();
+    for (const b of bookings) {
+      const rt = b.room.roomType;
+      const amount = b.payment ? Number(b.payment.amount) : 0;
+      if (!map.has(rt.id)) map.set(rt.id, { name: rt.name, revenue: 0, bookingCount: 0 });
+      const entry = map.get(rt.id)!;
+      entry.revenue += amount;
+      entry.bookingCount += 1;
+    }
+
+    const data = Array.from(map.values())
+      .sort((a, b) => b.revenue - a.revenue)
+      .slice(0, topN);
+
+    return { data };
+  }
+
+  async exportTopRoomTypesExcel(fromDate?: string, toDate?: string, topN = 10): Promise<Buffer> {
+    const stats = await this.getTopRoomTypesByRevenue(fromDate, toDate, topN);
+    const formattedFromDate = fromDate ? fromDate.split('-').reverse().join('/') : undefined;
+    const formattedToDate = toDate ? toDate.split('-').reverse().join('/') : undefined;
+    const workbook = await generateTopRoomTypesExcel(stats.data, formattedFromDate, formattedToDate);
+    return workbook.xlsx.writeBuffer() as Promise<Buffer>;
+  }
+
+  // ────────────────────────────────────────────────────────────────
+  // Top Booked Rooms
+  // ────────────────────────────────────────────────────────────────
+
+  async getTopBookedRooms(fromDate?: string, toDate?: string, topN = 10) {
+    const dateFilter = this.buildPaymentDateFilter(fromDate, toDate);
+
+    const bookings = await this.prisma.booking.findMany({
+      where: {
+        status: { notIn: ["CANCELLED"] },
+        payment: { ...dateFilter },
+      },
+      select: {
+        id: true,
+        room: {
+          select: {
+            id: true,
+            roomNumber: true,
+            name: true,
+            roomType: { select: { name: true } },
+          },
+        },
+        payment: { select: { amount: true } },
+      },
+    });
+
+    const map = new Map<number, { roomNumber: string; name: string; roomTypeName: string; bookingCount: number; revenue: number }>();
+    for (const b of bookings) {
+      const r = b.room;
+      const amount = b.payment ? Number(b.payment.amount) : 0;
+      if (!map.has(r.id))
+        map.set(r.id, { roomNumber: r.roomNumber, name: r.name, roomTypeName: r.roomType.name, bookingCount: 0, revenue: 0 });
+      const entry = map.get(r.id)!;
+      entry.bookingCount += 1;
+      entry.revenue += amount;
+    }
+
+    const data = Array.from(map.values())
+      .sort((a, b) => b.bookingCount - a.bookingCount)
+      .slice(0, topN);
+
+    return { data };
+  }
+
+  async exportTopBookedRoomsExcel(fromDate?: string, toDate?: string, topN = 10): Promise<Buffer> {
+    const stats = await this.getTopBookedRooms(fromDate, toDate, topN);
+    const formattedFromDate = fromDate ? fromDate.split('-').reverse().join('/') : undefined;
+    const formattedToDate = toDate ? toDate.split('-').reverse().join('/') : undefined;
+    const workbook = await generateTopBookedRoomsExcel(stats.data, formattedFromDate, formattedToDate);
+    return workbook.xlsx.writeBuffer() as Promise<Buffer>;
+  }
+
+  // ────────────────────────────────────────────────────────────────
+  // Top VIP Customers
+  // ────────────────────────────────────────────────────────────────
+
+  async getTopCustomers(fromDate?: string, toDate?: string, topN = 10) {
+    const dateFilter = this.buildPaymentDateFilter(fromDate, toDate);
+
+    const bookings = await this.prisma.booking.findMany({
+      where: {
+        payment: { ...dateFilter },
+      },
+      select: {
+        id: true,
+        user: {
+          select: { id: true, email: true, fullName: true, phone: true },
+        },
+        payment: { select: { amount: true } },
+      },
+    });
+
+    const map = new Map<number, { fullName: string; email: string; phone: string | null; bookingCount: number; totalSpent: number }>();
+    for (const b of bookings) {
+      const u = b.user;
+      const amount = b.payment ? Number(b.payment.amount) : 0;
+      if (!map.has(u.id))
+        map.set(u.id, { fullName: u.fullName, email: u.email, phone: u.phone, bookingCount: 0, totalSpent: 0 });
+      const entry = map.get(u.id)!;
+      entry.bookingCount += 1;
+      entry.totalSpent += amount;
+    }
+
+    const data = Array.from(map.values())
+      .sort((a, b) => b.totalSpent - a.totalSpent)
+      .slice(0, topN);
+
+    return { data };
+  }
+
+  async exportTopCustomersExcel(fromDate?: string, toDate?: string, topN = 10): Promise<Buffer> {
+    const stats = await this.getTopCustomers(fromDate, toDate, topN);
+    const formattedFromDate = fromDate ? fromDate.split('-').reverse().join('/') : undefined;
+    const formattedToDate = toDate ? toDate.split('-').reverse().join('/') : undefined;
+    const workbook = await generateTopCustomersExcel(stats.data, formattedFromDate, formattedToDate);
+    return workbook.xlsx.writeBuffer() as Promise<Buffer>;
+  }
+
+  // ────────────────────────────────────────────────────────────────
+  // Revenue by Source
+  // ────────────────────────────────────────────────────────────────
+
+  async getRevenueBySource(fromDate?: string, toDate?: string) {
+    const dateFilter = this.buildPaymentDateFilter(fromDate, toDate);
+
+    const bookings = await this.prisma.booking.findMany({
+      where: {
+        payment: { ...dateFilter },
+      },
+      select: {
+        numberOfNights: true,
+        roomPricePerNight: true,
+        services: { select: { priceSnapshot: true, quantity: true } },
+        combos: { select: { comboPriceSnapshot: true, quantity: true } },
+      },
+    });
+
+    let roomRevenue = 0;
+    let serviceRevenue = 0;
+    let comboRevenue = 0;
+
+    for (const b of bookings) {
+      roomRevenue += Number(b.roomPricePerNight) * b.numberOfNights;
+      for (const s of b.services) {
+        serviceRevenue += Number(s.priceSnapshot) * s.quantity;
+      }
+      for (const c of b.combos) {
+        comboRevenue += Number(c.comboPriceSnapshot) * c.quantity;
+      }
+    }
+
+    const data = [
+      { source: "Phòng", revenue: roomRevenue },
+      { source: "Dịch vụ lẻ", revenue: serviceRevenue },
+      { source: "Combo", revenue: comboRevenue },
+    ];
+
+    return { data, total: roomRevenue + serviceRevenue + comboRevenue };
+  }
+
+  async exportRevenueBySourceExcel(fromDate?: string, toDate?: string): Promise<Buffer> {
+    const stats = await this.getRevenueBySource(fromDate, toDate);
+    const formattedFromDate = fromDate ? fromDate.split('-').reverse().join('/') : undefined;
+    const formattedToDate = toDate ? toDate.split('-').reverse().join('/') : undefined;
+    const workbook = await generateRevenueBySourceExcel(stats.data, stats.total, formattedFromDate, formattedToDate);
+    return workbook.xlsx.writeBuffer() as Promise<Buffer>;
+  }
+
+  // ────────────────────────────────────────────────────────────────
+  // Most Used Services
+  // ────────────────────────────────────────────────────────────────
+
+  async getTopServices(fromDate?: string, toDate?: string, topN = 10) {
+    const dateFilter = this.buildPaymentDateFilter(fromDate, toDate);
+
+    const bookingServices = await this.prisma.bookingService.findMany({
+      where: {
+        booking: {
+          payment: { ...dateFilter },
+        },
+      },
+      select: {
+        quantity: true,
+        priceSnapshot: true,
+        service: { select: { id: true, name: true } },
+      },
+    });
+
+    const map = new Map<number, { name: string; totalUsage: number; revenue: number }>();
+    for (const bs of bookingServices) {
+      const svc = bs.service;
+      if (!map.has(svc.id)) map.set(svc.id, { name: svc.name, totalUsage: 0, revenue: 0 });
+      const entry = map.get(svc.id)!;
+      entry.totalUsage += bs.quantity;
+      entry.revenue += Number(bs.priceSnapshot) * bs.quantity;
+    }
+
+    const data = Array.from(map.values())
+      .sort((a, b) => b.totalUsage - a.totalUsage)
+      .slice(0, topN);
+
+    return { data };
+  }
+
+  async exportTopServicesExcel(fromDate?: string, toDate?: string, topN = 10): Promise<Buffer> {
+    const stats = await this.getTopServices(fromDate, toDate, topN);
+    const formattedFromDate = fromDate ? fromDate.split('-').reverse().join('/') : undefined;
+    const formattedToDate = toDate ? toDate.split('-').reverse().join('/') : undefined;
+    const workbook = await generateTopServicesExcel(stats.data, formattedFromDate, formattedToDate);
+    return workbook.xlsx.writeBuffer() as Promise<Buffer>;
+  }
+
+  // ────────────────────────────────────────────────────────────────
+  // Helper: Build payment date filter
+  // ────────────────────────────────────────────────────────────────
+
+  private buildPaymentDateFilter(fromDate?: string, toDate?: string): any {
+    const filter: any = { status: { in: ["PAID", "SUCCESS"] } };
+    if (fromDate || toDate) {
+      filter.paidAt = {};
+      if (fromDate) filter.paidAt.gte = new Date(fromDate + "T00:00:00.000Z");
+      if (toDate) filter.paidAt.lte = new Date(toDate + "T23:59:59.999Z");
+    }
+    return filter;
+  }
+
+  // ────────────────────────────────────────────────────────────────
+  // Existing: Revenue Report (paginated list)
+  // ────────────────────────────────────────────────────────────────
 
   async getRevenueReport(page = 1, limit = 20, fromDate?: string, toDate?: string) {
     const where: any = { status: { in: ["PAID", "SUCCESS"] } };
@@ -119,6 +417,10 @@ export class AdminService {
     ]);
     return { data, total, page, limit, totalPages: Math.ceil(total / limit) };
   }
+
+  // ────────────────────────────────────────────────────────────────
+  // Rooms / Users / Bookings management (unchanged)
+  // ────────────────────────────────────────────────────────────────
 
   async getAllRooms(page = 1, limit = 20) {
     const skip = (page - 1) * limit;

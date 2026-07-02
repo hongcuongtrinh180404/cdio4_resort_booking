@@ -23,12 +23,26 @@ interface Conversation {
   id: number;
   userId: number;
   hasUnread: boolean;
+  user: {
+    id: number;
+    email: string;
+    fullName: string;
+    phone: string | null;
+  };
+  lastMessage: string | null;
+  lastMessageAt: string;
 }
 
 const ROLE_LABEL: Record<string, string> = {
   GUEST: "Khách hàng",
   EMPLOYEE: "Nhân viên",
   ADMIN: "Quản trị viên",
+};
+
+const ROLE_COLOR: Record<string, string> = {
+  GUEST: "bg-slate-100 text-slate-800 border border-slate-200",
+  EMPLOYEE: "bg-blue-100 text-blue-800 border border-blue-200",
+  ADMIN: "bg-purple-100 text-purple-800 border border-purple-200",
 };
 
 const STATUS_LABEL: Record<string, string> = {
@@ -243,6 +257,21 @@ function CreateUserModal({ onClose, onCreated }: { onClose: () => void; onCreate
   );
 }
 
+function formatRelativeTime(dateString: string) {
+  if (!dateString) return "";
+  const date = new Date(dateString);
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffMins = Math.floor(diffMs / 60000);
+  if (diffMins < 1) return "Vừa xong";
+  if (diffMins < 60) return `${diffMins} phút`;
+  const diffHours = Math.floor(diffMins / 60);
+  if (diffHours < 24) return `${diffHours} giờ`;
+  const diffDays = Math.floor(diffHours / 24);
+  if (diffDays === 1) return "Hôm qua";
+  return `${diffDays} ngày`;
+}
+
 export default function AdminUsersPage() {
   const [users, setUsers] = useState<User[]>([]);
   const [conversations, setConversations] = useState<Conversation[]>([]);
@@ -255,6 +284,10 @@ export default function AdminUsersPage() {
   const [chatTarget, setChatTarget] = useState<{ id: number; name: string } | null>(null);
   const [showCreate, setShowCreate] = useState(false);
   const [editTarget, setEditTarget] = useState<User | null>(null);
+
+  const [showChatDropdown, setShowChatDropdown] = useState(false);
+  const [chatSearchQuery, setChatSearchQuery] = useState("");
+  const [chatFilter, setChatFilter] = useState<"all" | "unread">("all");
 
   const fetchUsers = useCallback(async () => {
     setLoading(true);
@@ -275,7 +308,14 @@ export default function AdminUsersPage() {
   const fetchConversations = useCallback(async () => {
     try {
       const convs = await get<any[]>("/admin/chat/conversations");
-      setConversations(convs.map((c: any) => ({ id: c.id, userId: c.userId, hasUnread: c.hasUnread })));
+      setConversations(convs.map((c: any) => ({
+        id: c.id,
+        userId: c.userId,
+        hasUnread: c.hasUnread,
+        user: c.user,
+        lastMessage: c.lastMessage,
+        lastMessageAt: c.lastMessageAt,
+      })));
     } catch {}
   }, []);
 
@@ -290,6 +330,16 @@ export default function AdminUsersPage() {
   }, [fetchConversations]);
 
   const hasUnread = (userId: number) => conversations.some((c) => c.userId === userId && c.hasUnread);
+
+  const unreadCount = conversations.filter((c) => c.hasUnread).length;
+
+  const filteredConversations = conversations.filter((c) => {
+    if (!c.user || !c.user.fullName) return false;
+    const matchesSearch = c.user.fullName.toLowerCase().includes(chatSearchQuery.toLowerCase()) ||
+                          c.user.email.toLowerCase().includes(chatSearchQuery.toLowerCase());
+    const matchesFilter = chatFilter === "all" ? true : c.hasUnread;
+    return matchesSearch && matchesFilter;
+  });
 
   return (
     <div className="p-6 md:p-8 max-w-6xl">
@@ -309,18 +359,143 @@ export default function AdminUsersPage() {
 
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <h1 className="font-headline-sm text-headline-sm font-bold text-on-surface">Quản lý người dùng</h1>
-          <p className="text-body-md text-on-surface-variant mt-1">Danh sách người dùng đã đăng ký</p>
+          <h1 className="font-headline-sm text-headline-sm font-bold text-on-surface">
+            {isAdmin ? "Quản lý người dùng" : "Hỗ trợ khách hàng"}
+          </h1>
+          <p className="text-body-md text-on-surface-variant mt-1">
+            {isAdmin ? "Danh sách người dùng đã đăng ký" : "Danh sách khách hàng"}
+          </p>
         </div>
-        {isAdmin && (
-          <button
-            onClick={() => setShowCreate(true)}
-            className="flex items-center gap-2 bg-primary text-on-primary px-5 py-2.5 rounded-full text-label-caps text-sm font-semibold hover:bg-primary/90 transition-all active:scale-95"
-          >
-            <Icon icon="material-symbols:add" className="text-lg" />
-            Thêm người dùng
-          </button>
-        )}
+        
+        <div className="flex items-center gap-4">
+          {/* Notification Bell with Dropdown */}
+          <div className="relative">
+            <button
+              onClick={() => setShowChatDropdown(!showChatDropdown)}
+              className="relative p-2.5 rounded-full border border-outline hover:bg-slate-100 transition-colors text-on-surface-variant focus:outline-none"
+              title="Thông báo tin nhắn"
+            >
+              <Icon icon="material-symbols:notifications-outline" className="text-2xl" />
+              {unreadCount > 0 && (
+                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold w-5 h-5 rounded-full flex items-center justify-center animate-bounce">
+                  {unreadCount}
+                </span>
+              )}
+            </button>
+
+            {showChatDropdown && (
+              <>
+                <div className="fixed inset-0 z-40" onClick={() => setShowChatDropdown(false)} />
+                <div className="absolute right-0 mt-2 w-96 bg-white rounded-2xl shadow-2xl border border-outline z-50 overflow-hidden flex flex-col max-h-[500px] animate-fade-in">
+                  <style>{`
+                    @keyframes fade-in { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+                    .animate-fade-in { animation: fade-in 0.2s ease-out; }
+                  `}</style>
+                  
+                  {/* Dropdown Header */}
+                  <div className="p-4 border-b border-outline flex items-center justify-between shrink-0">
+                    <span className="font-bold text-lg text-on-surface">Đoạn chat</span>
+                  </div>
+
+                  {/* Search Input */}
+                  <div className="p-3 shrink-0">
+                    <div className="relative">
+                      <Icon icon="material-symbols:search" className="absolute left-3 top-2.5 text-on-surface-variant text-lg" />
+                      <input
+                        type="text"
+                        placeholder="Tìm kiếm khách hàng..."
+                        value={chatSearchQuery}
+                        onChange={(e) => setChatSearchQuery(e.target.value)}
+                        className="w-full h-9 pl-9 pr-4 rounded-full bg-slate-100 text-body-sm placeholder:text-on-surface-variant outline-none focus:ring-2 focus:ring-primary/20 focus:bg-white transition-all"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Tabs */}
+                  <div className="flex gap-2 px-3 pb-2 border-b border-outline shrink-0">
+                    <button
+                      onClick={() => setChatFilter("all")}
+                      className={`px-3 py-1 rounded-full text-xs font-semibold transition-all ${
+                        chatFilter === "all"
+                          ? "bg-primary/10 text-primary"
+                          : "text-on-surface-variant hover:bg-slate-100"
+                      }`}
+                    >
+                      Tất cả
+                    </button>
+                    <button
+                      onClick={() => setChatFilter("unread")}
+                      className={`px-3 py-1 rounded-full text-xs font-semibold transition-all ${
+                        chatFilter === "unread"
+                          ? "bg-primary/10 text-primary"
+                          : "text-on-surface-variant hover:bg-slate-100"
+                      }`}
+                    >
+                      Chưa đọc
+                    </button>
+                  </div>
+
+                  {/* Conversation List */}
+                  <div className="flex-1 overflow-y-auto divide-y divide-outline/50 max-h-[300px]">
+                    {filteredConversations.length === 0 ? (
+                      <div className="p-8 text-center text-body-sm text-on-surface-variant">
+                        Không có cuộc hội thoại nào
+                      </div>
+                    ) : (
+                      filteredConversations.map((c) => (
+                        <button
+                          key={c.id}
+                          onClick={async () => {
+                            setChatTarget({ id: c.userId, name: c.user.fullName });
+                            setShowChatDropdown(false);
+                            try {
+                              await patch(`/admin/chat/${c.id}/read`);
+                              fetchConversations();
+                            } catch {}
+                          }}
+                          className="w-full p-3 flex items-center gap-3 hover:bg-slate-50 transition-colors text-left"
+                        >
+                          {/* Avatar */}
+                          <div className="w-10 h-10 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-sm shrink-0">
+                            {c.user.fullName.charAt(0).toUpperCase()}
+                          </div>
+
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center justify-between gap-2">
+                              <span className={`text-body-sm truncate ${c.hasUnread ? "font-bold text-on-surface" : "text-on-surface-variant"}`}>
+                                {c.user.fullName}
+                              </span>
+                              <span className="text-[10px] text-on-surface-variant shrink-0">
+                                {formatRelativeTime(c.lastMessageAt)}
+                              </span>
+                            </div>
+                            <p className={`text-xs truncate mt-0.5 ${c.hasUnread ? "font-semibold text-on-surface" : "text-on-surface-variant"}`}>
+                              {c.lastMessage || "Chưa có tin nhắn"}
+                            </p>
+                          </div>
+
+                          {c.hasUnread && (
+                            <span className="w-2.5 h-2.5 bg-blue-500 rounded-full shrink-0" />
+                          )}
+                        </button>
+                      ))
+                    )}
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+
+          {isAdmin && (
+            <button
+              onClick={() => setShowCreate(true)}
+              className="flex items-center gap-2 bg-primary text-on-primary px-5 py-2.5 rounded-full text-label-caps text-sm font-semibold hover:bg-primary/90 transition-all active:scale-95 whitespace-nowrap"
+            >
+              <Icon icon="material-symbols:add" className="text-lg" />
+              Thêm người dùng
+            </button>
+          )}
+        </div>
       </div>
 
       {loading ? (
@@ -337,6 +512,7 @@ export default function AdminUsersPage() {
                     <th className="p-4 font-bold">Họ tên</th>
                     <th className="p-4 font-bold">Email</th>
                     <th className="p-4 font-bold">Số điện thoại</th>
+                    <th className="p-4 font-bold">Vai trò</th>
                     {isAdmin && <th className="p-4 font-bold text-center">Thao tác</th>}
                     <th className="p-4 font-bold text-center">Số booking</th>
                     <th className="p-4 font-bold">Ngày đăng ký</th>
@@ -349,6 +525,11 @@ export default function AdminUsersPage() {
                       <td className="p-4 font-medium text-on-surface">{u.fullName}</td>
                       <td className="p-4">{u.email}</td>
                       <td className="p-4">{u.phone ?? "—"}</td>
+                      <td className="p-4">
+                        <span className={`text-label-caps px-3 py-1 rounded-full text-xs font-semibold ${ROLE_COLOR[u.role] || "bg-gray-100 text-gray-800"}`}>
+                          {ROLE_LABEL[u.role] || u.role}
+                        </span>
+                      </td>
                       {isAdmin && (
                         <td className="p-4 text-center">
                           <div className="flex items-center justify-center gap-2">
