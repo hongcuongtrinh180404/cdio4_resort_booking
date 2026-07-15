@@ -9,7 +9,7 @@ import { getToken } from "@/lib/auth";
 import { Icon } from "@iconify/react";
 
 interface Message {
-  role: "user" | "assistant" | "staff";
+  role: "user" | "assistant" | "staff" | "system";
   content: string;
   action?: string;
   data?: any;
@@ -118,13 +118,16 @@ export default function ChatWidget() {
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [confirming, setConfirming] = useState(false);
+  const [aiPaused, setAiPaused] = useState(false);
+  const [supportRequested, setSupportRequested] = useState(false);
+  const [requestingSupport, setRequestingSupport] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  // WebSocket for real-time staff replies
+  // WebSocket for real-time staff replies and AI pause events
   useEffect(() => {
     if (!open) return;
     const token = getToken();
@@ -141,6 +144,31 @@ export default function ChatWidget() {
       if (data.role === "staff") {
         setMessages((prev) => [...prev, { role: "staff", content: data.content }]);
       }
+    });
+
+    // Nhân viên đã tham gia cuộc hội thoại
+    socket.on("staff_joined", () => {
+      setAiPaused(true);
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: "system",
+          content: "🧑‍💼 Nhân viên đã tham gia hỗ trợ bạn. AI trợ lý tạm dừng trong 6 tiếng.",
+        },
+      ]);
+    });
+
+    // AI hoạt động trở lại
+    socket.on("ai_resumed", () => {
+      setAiPaused(false);
+      setSupportRequested(false);
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: "system",
+          content: "🤖 Trợ lý AI đã hoạt động trở lại. Tôi có thể giúp gì cho bạn?",
+        },
+      ]);
     });
 
     return () => { socket.disconnect(); };
@@ -197,6 +225,33 @@ export default function ChatWidget() {
     }
   };
 
+  const handleRequestSupport = async () => {
+    if (supportRequested || requestingSupport) return;
+    if (!getToken()) {
+      window.location.href = "/login";
+      return;
+    }
+    setRequestingSupport(true);
+    try {
+      await post("/chat/request-support", {});
+      setSupportRequested(true);
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: "system",
+          content: "✅ Yêu cầu hỗ trợ đã được gửi! Nhân viên sẽ phản hồi bạn sớm nhất có thể.",
+        },
+      ]);
+    } catch {
+      setMessages((prev) => [
+        ...prev,
+        { role: "assistant", content: "Xin lỗi, không thể gửi yêu cầu. Vui lòng thử lại." },
+      ]);
+    } finally {
+      setRequestingSupport(false);
+    }
+  };
+
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
@@ -218,44 +273,85 @@ export default function ChatWidget() {
 
       {open && (
         <div className="fixed bottom-6 right-6 z-50 w-[750px] max-[782px]:w-[calc(100vw-32px)] max-[782px]:right-4 h-[900px] max-h-[calc(100vh-180px)] glass-card rounded-2xl flex flex-col overflow-hidden shadow-2xl">
+          {/* Header */}
           <div className="bg-primary text-on-primary px-5 py-4 flex items-center gap-3 shrink-0">
             <div className="w-9 h-9 rounded-full bg-white/20 flex items-center justify-center">
-              <Icon icon="material-symbols:smart-toy" className="text-lg" />
+              <Icon icon={aiPaused ? "material-symbols:support-agent" : "material-symbols:smart-toy"} className="text-lg" />
             </div>
             <div className="flex-1 min-w-0">
               <p className="font-semibold text-sm">Trợ lý DTUVIVI</p>
-              <p className="text-xs text-white/70">Hỗ trợ đặt phòng 24/7</p>
+              {aiPaused ? (
+                <p className="text-xs text-white/90 flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-green-300 animate-pulse inline-block" />
+                  Nhân viên đang hỗ trợ bạn
+                </p>
+              ) : (
+                <p className="text-xs text-white/70">Hỗ trợ đặt phòng 24/7</p>
+              )}
             </div>
             <button onClick={() => setOpen(false)} className="text-white/70 hover:text-white transition-colors">
               <Icon icon="material-symbols:close" className="text-xl" />
             </button>
           </div>
 
+          {/* Messages */}
           <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3 bg-white/50">
-            {messages.map((msg, i) => (
-              <div key={i} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
-                <div
-                  className={`max-w-[90%] px-4 py-2.5 rounded-2xl text-sm leading-relaxed ${
-                    msg.role === "user"
-                      ? "bg-primary text-on-primary rounded-br-md"
-                      : "bg-surface-container-high text-on-surface rounded-bl-md"
-                  }`}
-                >
-                  <p className="whitespace-pre-wrap">{msg.content}</p>
-                  {msg.role === "assistant" && msg.action === "rooms" && msg.data?.length > 0 && (
-                    <RoomList rooms={msg.data} />
+            {messages.map((msg, i) => {
+              // Tin nhắn hệ thống
+              if (msg.role === "system") {
+                return (
+                  <div key={i} className="flex justify-center">
+                    <div className="bg-primary/8 text-on-surface-variant text-xs px-4 py-2 rounded-full border border-primary/15 text-center max-w-[90%]">
+                      {msg.content}
+                    </div>
+                  </div>
+                );
+              }
+
+              return (
+                <div key={i} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
+                  {(msg.role === "assistant" || msg.role === "staff") && (
+                    <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center mr-2 shrink-0 mt-0.5">
+                      <Icon
+                        icon={msg.role === "staff" ? "material-symbols:support-agent" : "material-symbols:smart-toy"}
+                        className="text-sm text-primary"
+                      />
+                    </div>
                   )}
-                  {msg.role === "assistant" && msg.action === "booking" && msg.data && (
-                    <BookingCard data={msg.data} />
-                  )}
-                  {msg.role === "assistant" && msg.action === "booking_proposal" && msg.data && (
-                    <BookingProposal data={msg.data} onConfirm={() => handleConfirmBooking(msg.data)} confirming={confirming} />
-                  )}
+                  <div
+                    className={`max-w-[80%] px-4 py-2.5 rounded-2xl text-sm leading-relaxed ${
+                      msg.role === "user"
+                        ? "bg-primary text-on-primary rounded-br-md"
+                        : msg.role === "staff"
+                        ? "bg-green-50 text-green-900 border border-green-200 rounded-bl-md"
+                        : "bg-surface-container-high text-on-surface rounded-bl-md"
+                    }`}
+                  >
+                    {msg.role === "staff" && (
+                      <p className="text-[10px] font-semibold text-green-600 mb-1 flex items-center gap-1">
+                        <Icon icon="material-symbols:support-agent" className="text-xs" />
+                        Nhân viên hỗ trợ
+                      </p>
+                    )}
+                    <p className="whitespace-pre-wrap">{msg.content}</p>
+                    {msg.role === "assistant" && msg.action === "rooms" && msg.data?.length > 0 && (
+                      <RoomList rooms={msg.data} />
+                    )}
+                    {msg.role === "assistant" && msg.action === "booking" && msg.data && (
+                      <BookingCard data={msg.data} />
+                    )}
+                    {msg.role === "assistant" && msg.action === "booking_proposal" && msg.data && (
+                      <BookingProposal data={msg.data} onConfirm={() => handleConfirmBooking(msg.data)} confirming={confirming} />
+                    )}
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
             {loading && (
               <div className="flex justify-start">
+                <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center mr-2 shrink-0">
+                  <Icon icon="material-symbols:smart-toy" className="text-sm text-primary" />
+                </div>
                 <div className="bg-surface-container-high text-on-surface px-4 py-2.5 rounded-2xl rounded-bl-md text-sm">
                   <span className="inline-flex gap-1">
                     <span className="w-2 h-2 bg-primary/40 rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
@@ -268,13 +364,39 @@ export default function ChatWidget() {
             <div ref={messagesEndRef} />
           </div>
 
-          <div className="shrink-0 border-t border-outline/20 px-4 py-3 bg-white/80">
-            <div className="flex items-center gap-2">
+          {/* Input area */}
+          <div className="shrink-0 border-t border-outline/20 bg-white/80">
+            {/* Button chat với nhân viên */}
+            {!aiPaused && (
+              <div className="px-4 pt-2.5">
+                <button
+                  onClick={handleRequestSupport}
+                  disabled={supportRequested || requestingSupport}
+                  className={`w-full flex items-center justify-center gap-2 py-2 rounded-lg text-xs font-medium transition-all ${
+                    supportRequested
+                      ? "bg-green-50 text-green-700 border border-green-200 cursor-default"
+                      : "bg-secondary/10 text-on-surface border border-outline/20 hover:bg-secondary/20 hover:border-secondary/40 active:scale-[0.98]"
+                  }`}
+                >
+                  <Icon
+                    icon={supportRequested ? "material-symbols:check-circle-outline" : "material-symbols:support-agent"}
+                    className="text-base"
+                  />
+                  {requestingSupport
+                    ? "Đang gửi yêu cầu..."
+                    : supportRequested
+                    ? "Đã yêu cầu nhân viên hỗ trợ"
+                    : "Chat với nhân viên"}
+                </button>
+              </div>
+            )}
+
+            <div className="flex items-center gap-2 px-4 py-3">
               <input
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={handleKeyDown}
-                placeholder="Nhập tin nhắn..."
+                placeholder={aiPaused ? "Nhắn tin với nhân viên..." : "Nhập tin nhắn..."}
                 disabled={loading}
                 className="flex-1 h-10 px-4 rounded-full border border-outline/30 bg-background text-body-sm text-on-surface placeholder:text-on-surface-variant/50 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all disabled:opacity-50"
               />

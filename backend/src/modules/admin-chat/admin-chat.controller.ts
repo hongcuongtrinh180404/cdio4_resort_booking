@@ -44,6 +44,15 @@ export class AdminChatController {
     return this.adminChatService.staffReply(Number(id), user.sub, dto.content);
   }
 
+  @Post(":id/end-support")
+  @ApiOperation({ summary: "End staff support session, resume AI — EMPLOYEE/ADMIN" })
+  endSupport(
+    @Param("id") id: string,
+    @CurrentUser() user: JwtPayload,
+  ) {
+    return this.adminChatService.endSupport(Number(id), user.sub);
+  }
+
   @Patch(":id/read")
   @ApiOperation({ summary: "Mark conversation as read — EMPLOYEE/ADMIN" })
   markAsRead(@Param("id") id: string) {

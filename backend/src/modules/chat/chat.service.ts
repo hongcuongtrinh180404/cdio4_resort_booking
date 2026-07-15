@@ -165,11 +165,33 @@ export class ChatService {
         },
       });
 
-      this.chatGateway.sendToStaff("new_message", {
-        type: "user_message",
-        userId,
-        content: message,
-      });
+      // Không gửi thông báo socket đến staff cho tin nhắn thông thường.
+      // Staff chỉ nhận thông báo khi khách bấm "Chat với nhân viên" (support_request event).
+
+      // Kiểm tra AI có đang bị tạm dừng không
+      if (conversation.aiPausedUntil && conversation.aiPausedUntil > new Date()) {
+        const pausedReply = "Nhân viên đang hỗ trợ bạn. Vui lòng chờ phản hồi từ nhân viên nhé! 🧑‍💼";
+
+        await this.prisma.chatMessage.create({
+          data: {
+            conversationId: conversation.id,
+            role: "assistant",
+            content: pausedReply,
+          },
+        });
+
+        this.chatGateway.sendToUser(userId, "new_message", {
+          role: "assistant",
+          content: pausedReply,
+        });
+
+        await this.prisma.chatConversation.update({
+          where: { id: conversation.id },
+          data: { hasUnread: true, updatedAt: new Date() },
+        });
+
+        return { reply: pausedReply };
+      }
 
       const messages: any[] = [
         {
@@ -572,5 +594,47 @@ export class ChatService {
       bookingCode: booking.bookingCode,
       totalAmount: Number(booking.totalAmount),
     };
+  }
+
+  async requestHumanSupport(userId: number): Promise<{ success: boolean; message: string }> {
+    let conversation = await this.prisma.chatConversation.findFirst({
+      where: { userId, status: "ACTIVE" },
+    });
+
+    if (!conversation) {
+      conversation = await this.prisma.chatConversation.create({
+        data: { userId },
+      });
+    }
+
+    // Cập nhật flag yêu cầu hỗ trợ
+    await this.prisma.chatConversation.update({
+      where: { id: conversation.id },
+      data: { supportRequested: true, hasUnread: true, updatedAt: new Date() },
+    });
+
+    // Lưu tin nhắn hệ thống vào conversation
+    await this.prisma.chatMessage.create({
+      data: {
+        conversationId: conversation.id,
+        role: "system",
+        content: "[Khách hàng yêu cầu hỗ trợ từ nhân viên]",
+      },
+    });
+
+    // Lấy thông tin user để gửi cho staff
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true, fullName: true, email: true, phone: true },
+    });
+
+    // Gửi thông báo realtime đến tất cả staff/admin
+    this.chatGateway.sendToStaff("support_request", {
+      conversationId: conversation.id,
+      userId,
+      user,
+    });
+
+    return { success: true, message: "Yêu cầu hỗ trợ đã được gửi. Nhân viên sẽ phản hồi sớm nhất!" };
   }
 }

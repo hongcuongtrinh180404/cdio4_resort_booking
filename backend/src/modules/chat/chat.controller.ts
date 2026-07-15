@@ -25,6 +25,13 @@ export class ChatController {
     return this.chatService.confirmBooking(dto, user.sub);
   }
 
+  @Post("request-support")
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: "Request human staff support — pauses AI for 6 hours" })
+  async requestSupport(@CurrentUser() user: JwtPayload) {
+    return this.chatService.requestHumanSupport(user.sub);
+  }
+
   @Get("conversation")
   @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: "Get current user's active conversation with messages" })

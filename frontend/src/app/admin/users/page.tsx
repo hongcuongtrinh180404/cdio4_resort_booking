@@ -23,6 +23,8 @@ interface Conversation {
   id: number;
   userId: number;
   hasUnread: boolean;
+  supportRequested: boolean;
+  aiPaused: boolean;
   user: {
     id: number;
     email: string;
@@ -312,12 +314,33 @@ export default function AdminUsersPage() {
         id: c.id,
         userId: c.userId,
         hasUnread: c.hasUnread,
+        supportRequested: c.supportRequested,
+        aiPaused: c.aiPaused,
         user: c.user,
         lastMessage: c.lastMessage,
         lastMessageAt: c.lastMessageAt,
       })));
     } catch {}
   }, []);
+
+  // WebSocket listener: CHỈ lắng nghe support_request — không notify khi user nhắn thông thường
+  useEffect(() => {
+    const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+    if (!token) return;
+    const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000/api";
+    const socketUrl = API_URL.replace("/api", "");
+    let socket: any = null;
+    import("socket.io-client").then(({ io }) => {
+      socket = io(`${socketUrl}/ws`, { auth: { token }, transports: ["websocket", "polling"] });
+      socket.on("support_request", () => {
+        fetchConversations();
+        // Flash browser title khi có yêu cầu hỗ trợ mới
+        document.title = "🔔 Yêu cầu hỗ trợ mới! - DTUVIVU Admin";
+        setTimeout(() => { document.title = "DTUVIVU Admin"; }, 5000);
+      });
+    });
+    return () => { socket?.disconnect(); };
+  }, [fetchConversations]);
 
   useEffect(() => { const u = getUser(); setIsAdmin(u?.role === "ADMIN"); }, []);
 
@@ -330,14 +353,16 @@ export default function AdminUsersPage() {
   }, [fetchConversations]);
 
   const hasUnread = (userId: number) => conversations.some((c) => c.userId === userId && c.hasUnread);
+  const hasSupportRequest = (userId: number) => conversations.some((c) => c.userId === userId && c.supportRequested);
 
-  const unreadCount = conversations.filter((c) => c.hasUnread).length;
+  // Bell chỉ đếm những conversation đang có yêu cầu hỗ trợ chưa được xử lý
+  const unreadCount = conversations.filter((c) => c.supportRequested).length;
 
   const filteredConversations = conversations.filter((c) => {
     if (!c.user || !c.user.fullName) return false;
     const matchesSearch = c.user.fullName.toLowerCase().includes(chatSearchQuery.toLowerCase()) ||
                           c.user.email.toLowerCase().includes(chatSearchQuery.toLowerCase());
-    const matchesFilter = chatFilter === "all" ? true : c.hasUnread;
+    const matchesFilter = chatFilter === "all" ? true : c.supportRequested;
     return matchesSearch && matchesFilter;
   });
 
@@ -425,13 +450,18 @@ export default function AdminUsersPage() {
                     </button>
                     <button
                       onClick={() => setChatFilter("unread")}
-                      className={`px-3 py-1 rounded-full text-xs font-semibold transition-all ${
+                      className={`flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold transition-all ${
                         chatFilter === "unread"
-                          ? "bg-primary/10 text-primary"
+                          ? "bg-red-100 text-red-700"
                           : "text-on-surface-variant hover:bg-slate-100"
                       }`}
                     >
-                      Chưa đọc
+                      ⚡ Cần hỗ trợ
+                      {conversations.filter((c) => c.supportRequested).length > 0 && (
+                        <span className="bg-red-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full">
+                          {conversations.filter((c) => c.supportRequested).length}
+                        </span>
+                      )}
                     </button>
                   </div>
 
@@ -462,9 +492,16 @@ export default function AdminUsersPage() {
 
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center justify-between gap-2">
-                              <span className={`text-body-sm truncate ${c.hasUnread ? "font-bold text-on-surface" : "text-on-surface-variant"}`}>
-                                {c.user.fullName}
-                              </span>
+                              <div className="flex items-center gap-1.5 min-w-0">
+                                <span className={`text-body-sm truncate ${c.hasUnread ? "font-bold text-on-surface" : "text-on-surface-variant"}`}>
+                                  {c.user.fullName}
+                                </span>
+                                {c.supportRequested && (
+                                  <span className="shrink-0 flex items-center gap-1 bg-red-100 text-red-700 text-[10px] font-bold px-1.5 py-0.5 rounded-full">
+                                    ⚡ Hỗ trợ
+                                  </span>
+                                )}
+                              </div>
                               <span className="text-[10px] text-on-surface-variant shrink-0">
                                 {formatRelativeTime(c.lastMessageAt)}
                               </span>
@@ -474,8 +511,8 @@ export default function AdminUsersPage() {
                             </p>
                           </div>
 
-                          {c.hasUnread && (
-                            <span className="w-2.5 h-2.5 bg-blue-500 rounded-full shrink-0" />
+                          {(c.hasUnread || c.supportRequested) && (
+                            <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${c.supportRequested ? "bg-red-500 animate-pulse" : "bg-blue-500"}`} />
                           )}
                         </button>
                       ))
@@ -555,8 +592,14 @@ export default function AdminUsersPage() {
                           title="Xem tin nhắn"
                         >
                           <Icon icon="material-symbols:notifications" className={`text-xl transition-colors ${hasUnread(u.id) ? "text-yellow-500" : "text-gray-300"}`} />
-                          {hasUnread(u.id) && <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-red-500 rounded-full" />}
+                          {hasSupportRequest(u.id) && (
+                            <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[8px] font-bold px-1 py-0.5 rounded-full leading-none">!</span>
+                          )}
+                          {!hasSupportRequest(u.id) && hasUnread(u.id) && <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-red-500 rounded-full" />}
                         </button>
+                        {hasSupportRequest(u.id) && (
+                          <span className="block text-[10px] font-bold text-red-600 mt-0.5">Cần hỗ trợ</span>
+                        )}
                       </td>
                     </tr>
                   ))}

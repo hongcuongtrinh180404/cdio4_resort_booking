@@ -15,7 +15,14 @@ interface Message {
 }
 
 interface ConversationData {
-  conversation: any;
+  conversation: {
+    id: number;
+    userId: number;
+    aiPaused: boolean;
+    aiPausedUntil?: string | null;
+    supportRequested: boolean;
+    staffId?: number | null;
+  };
   messages: Message[];
 }
 
@@ -32,6 +39,9 @@ export default function ChatPanel({
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(true);
+  const [aiPaused, setAiPaused] = useState(false);
+  const [aiPausedUntil, setAiPausedUntil] = useState<Date | null>(null);
+  const [endingSupport, setEndingSupport] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const fetchMessages = async () => {
@@ -39,6 +49,10 @@ export default function ChatPanel({
     try {
       const res = await get<ConversationData>(`/admin/chat/${conversationId}/messages`);
       setMessages(res.messages);
+      setAiPaused(res.conversation.aiPaused);
+      if (res.conversation.aiPausedUntil) {
+        setAiPausedUntil(new Date(res.conversation.aiPausedUntil));
+      }
     } catch {}
   };
 
@@ -50,9 +64,11 @@ export default function ChatPanel({
       const conv = convs.find((c: any) => c.userId === userId);
       if (conv) {
         setConversationId(conv.id);
+        setAiPaused(conv.aiPaused);
+        if (conv.aiPausedUntil) setAiPausedUntil(new Date(conv.aiPausedUntil));
         const res = await get<ConversationData>(`/admin/chat/${conv.id}/messages`);
         setMessages(res.messages);
-        await patch(`/admin/chat/${conv.id}/read`);
+        await patchReq(`/admin/chat/${conv.id}/read`);
       }
     } catch {} finally {
       setLoading(false);
@@ -80,6 +96,13 @@ export default function ChatPanel({
       fetchMessages();
     });
 
+    socket.on("ai_resumed", (data: { conversationId: number }) => {
+      if (data.conversationId === conversationId) {
+        setAiPaused(false);
+        setAiPausedUntil(null);
+      }
+    });
+
     return () => { socket.disconnect(); };
   }, [conversationId]);
 
@@ -95,7 +118,28 @@ export default function ChatPanel({
     try {
       await post(`/admin/chat/${conversationId}/reply`, { content });
       await fetchMessages();
+      // AI sẽ bị pause sau khi reply — cập nhật state
+      setAiPaused(true);
+      setAiPausedUntil(new Date(Date.now() + 6 * 60 * 60 * 1000));
     } catch {}
+  };
+
+  const handleEndSupport = async () => {
+    if (!conversationId || endingSupport) return;
+    setEndingSupport(true);
+    try {
+      await post(`/admin/chat/${conversationId}/end-support`, {});
+      setAiPaused(false);
+      setAiPausedUntil(null);
+      await fetchMessages();
+    } catch {} finally {
+      setEndingSupport(false);
+    }
+  };
+
+  const formatPausedUntil = () => {
+    if (!aiPausedUntil) return "";
+    return aiPausedUntil.toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" });
   };
 
   return (
@@ -124,6 +168,26 @@ export default function ChatPanel({
           </button>
         </div>
 
+        {/* AI Pause Status Banner */}
+        {aiPaused && (
+          <div className="bg-amber-50 border-b border-amber-200 px-4 py-2.5 flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2 min-w-0">
+              <div className="w-2 h-2 rounded-full bg-amber-500 animate-pulse shrink-0" />
+              <p className="text-xs text-amber-800 font-medium truncate">
+                🤖 AI tạm dừng đến {formatPausedUntil()}
+              </p>
+            </div>
+            <button
+              onClick={handleEndSupport}
+              disabled={endingSupport}
+              className="shrink-0 flex items-center gap-1.5 bg-white border border-amber-300 text-amber-800 text-xs font-semibold px-3 py-1.5 rounded-lg hover:bg-amber-50 transition-all active:scale-95 disabled:opacity-50"
+            >
+              <Icon icon="material-symbols:stop-circle-outline" className="text-sm" />
+              {endingSupport ? "Đang xử lý..." : "Kết thúc hỗ trợ"}
+            </button>
+          </div>
+        )}
+
         {/* Messages */}
         <div className="flex-1 overflow-y-auto px-5 py-4 space-y-3 bg-gray-50">
           {loading ? (
@@ -133,32 +197,45 @@ export default function ChatPanel({
               Khách hàng chưa có tin nhắn nào
             </div>
           ) : (
-            messages.map((msg) => (
-              <div key={msg.id} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
-                <div
-                  className={`max-w-[80%] px-4 py-2.5 rounded-2xl text-sm leading-relaxed ${
-                    msg.role === "user"
-                      ? "bg-primary text-on-primary rounded-br-md"
-                      : msg.role === "staff"
-                      ? "bg-green-100 text-green-900 rounded-bl-md"
-                      : "bg-white text-on-surface border border-outline/20 rounded-bl-md"
-                  }`}
-                >
-                  <p className="whitespace-pre-wrap">{msg.content}</p>
-                  <p className="text-[10px] mt-1 opacity-60">
-                    {msg.role === "staff" && msg.staff
-                      ? `${msg.staff.fullName} · `
-                      : msg.role === "assistant"
-                      ? <><Icon icon="mdi:robot" className="inline-block align-middle" /> AI · </>
-                      : ""}
-                    {new Date(msg.createdAt).toLocaleTimeString("vi-VN", {
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })}
-                  </p>
+            messages.map((msg) => {
+              // Tin nhắn hệ thống
+              if (msg.role === "system") {
+                return (
+                  <div key={msg.id} className="flex justify-center">
+                    <div className="bg-gray-100 text-gray-500 text-xs px-4 py-1.5 rounded-full text-center max-w-[90%]">
+                      {msg.content}
+                    </div>
+                  </div>
+                );
+              }
+
+              return (
+                <div key={msg.id} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
+                  <div
+                    className={`max-w-[80%] px-4 py-2.5 rounded-2xl text-sm leading-relaxed ${
+                      msg.role === "user"
+                        ? "bg-primary text-on-primary rounded-br-md"
+                        : msg.role === "staff"
+                        ? "bg-green-100 text-green-900 rounded-bl-md"
+                        : "bg-white text-on-surface border border-outline/20 rounded-bl-md"
+                    }`}
+                  >
+                    <p className="whitespace-pre-wrap">{msg.content}</p>
+                    <p className="text-[10px] mt-1 opacity-60">
+                      {msg.role === "staff" && msg.staff
+                        ? `${msg.staff.fullName} · `
+                        : msg.role === "assistant"
+                        ? <><Icon icon="mdi:robot" className="inline-block align-middle" /> AI · </>
+                        : ""}
+                      {new Date(msg.createdAt).toLocaleTimeString("vi-VN", {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
+                    </p>
+                  </div>
                 </div>
-              </div>
-            ))
+              );
+            })
           )}
           <div ref={messagesEndRef} />
         </div>
@@ -190,7 +267,7 @@ export default function ChatPanel({
 }
 
 // Import patch inline to avoid circular deps
-async function patch(path: string) {
+async function patchReq(path: string) {
   const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
   const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000/api";
   await fetch(`${API_URL}${path}`, {

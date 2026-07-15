@@ -25,6 +25,7 @@ model User {
   wishlist Wishlist[]
   chatConversations ChatConversation[]
   chatMessages ChatMessage[]
+  staffConversations ChatConversation[] @relation("ConversationStaff")
 }
 
 model RoomType {
@@ -148,16 +149,21 @@ model Booking {
 }
 
 model ChatConversation {
-  id        Int           @id @default(autoincrement())
-  userId    Int
-  user      User          @relation(fields: [userId], references: [id])
-  status    ChatStatus    @default(ACTIVE)
-  hasUnread Boolean       @default(false)
-  createdAt DateTime      @default(now())
-  updatedAt DateTime      @updatedAt
-  messages  ChatMessage[]
+  id               Int           @id @default(autoincrement())
+  userId           Int
+  user             User          @relation(fields: [userId], references: [id])
+  status           ChatStatus    @default(ACTIVE)
+  hasUnread        Boolean       @default(false)
+  supportRequested Boolean       @default(false)
+  staffId          Int?
+  staff            User?         @relation("ConversationStaff", fields: [staffId], references: [id])
+  aiPausedUntil    DateTime?
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+  messages         ChatMessage[]
 
   @@index([userId])
+  @@index([staffId])
 }
 
 model ChatMessage {
